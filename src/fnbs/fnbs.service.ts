@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, NotFoundException } from '@nestjs/common';
 import { CreateFnbDto } from './dto/create-fnb.dto';
 import { UpdateFnbDto } from './dto/update-fnb.dto';
 import { InjectModel } from '@nestjs/mongoose';
@@ -85,12 +85,7 @@ export class FnbsService {
         updateFnbDto,
         { returnDocument: 'after' },
       );
-      if (!updatedFnb)
-        return {
-          status: 404,
-          message: 'NOT FOUND',
-          data: null,
-        };
+      if (!updatedFnb) throw new NotFoundException('Fnb Not Found');
 
       return {
         status: 200,

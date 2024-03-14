@@ -21,9 +21,21 @@ export class Report {
   paymentMethod: string;
 
   @Prop({ required: true })
-  orders: string;
+  orderId: string[];
 
   @Prop({ required: true })
+  orderName: string[];
+
+  @Prop({ required: true })
+  orderCategory: string[];
+
+  @Prop({ required: true })
+  orderPrice: number[];
+
+  @Prop({ required: true })
+  orderAmount: number[];
+
+  @Prop()
   note: string;
 
   @Prop()

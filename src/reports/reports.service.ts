@@ -48,15 +48,58 @@ export class ReportsService {
     }
   }
 
-  findOne(id: number) {
-    return `This action returns a #${id} report`;
+  async findOne(id: string): Promise<Response<Report>> {
+    try {
+      const report: Report = await this.reportModel.findOne({ id });
+      if (!report) throw new NotFoundException('Report Not Found');
+
+      return {
+        status: 200,
+        message: 'OK',
+        data: report,
+      };
+    } catch (error) {
+      console.log(error);
+      throw error;
+    }
   }
 
-  update(id: number, updateReportDto: UpdateReportDto) {
-    return `This action updates a #${id} report`;
+  async update(
+    id: number,
+    updateReportDto: UpdateReportDto,
+  ): Promise<Response<Report>> {
+    try {
+      const report: Report = await this.reportModel.findOneAndUpdate(
+        { id },
+        updateReportDto,
+        { returnDocument: 'after' },
+      );
+      if (!report) throw new NotFoundException('Report Not Found');
+
+      return {
+        status: 200,
+        message: 'OK',
+        data: report,
+      };
+    } catch (error) {
+      console.log(error);
+      throw error;
+    }
   }
 
-  remove(id: number) {
-    return `This action removes a #${id} report`;
+  async remove(id: string): Promise<Response<Report>> {
+    try {
+      const report: Report = await this.reportModel.findOneAndDelete({ id });
+      if (!report) throw new NotFoundException('Report Not Found');
+
+      return {
+        status: 200,
+        message: 'OK',
+        data: report,
+      };
+    } catch (error) {
+      console.log(error);
+      throw error;
+    }
   }
 }

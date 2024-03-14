@@ -3,6 +3,10 @@ export class CreateReportDto {
   collectedBy: string;
   totalPayment: number;
   paymentMethod: string;
-  orders: string;
+  orderId: string[];
+  orderName: string[];
+  orderCategory: string[];
+  orderPrice: number[];
+  orderAmount: number[];
   note?: string;
 }
