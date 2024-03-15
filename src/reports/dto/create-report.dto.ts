@@ -1,12 +1,10 @@
+import Order from 'src/interfaces/order.interface';
+
 export class CreateReportDto {
   customerName?: string;
   collectedBy: string;
   totalPayment: number;
   paymentMethod: string;
-  orderId: string[];
-  orderName: string[];
-  orderCategory: string[];
-  orderPrice: number[];
-  orderAmount: number[];
+  orders: Order[];
   note?: string;
 }

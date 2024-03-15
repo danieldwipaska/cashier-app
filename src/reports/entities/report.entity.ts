@@ -1,5 +1,6 @@
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
 import { HydratedDocument } from 'mongoose';
+import Order from 'src/interfaces/order.interface';
 
 export type ReportDocument = HydratedDocument<Report>;
 
@@ -21,19 +22,7 @@ export class Report {
   paymentMethod: string;
 
   @Prop({ required: true })
-  orderId: string[];
-
-  @Prop({ required: true })
-  orderName: string[];
-
-  @Prop({ required: true })
-  orderCategory: string[];
-
-  @Prop({ required: true })
-  orderPrice: number[];
-
-  @Prop({ required: true })
-  orderAmount: number[];
+  orders: Order[];
 
   @Prop()
   note: string;
