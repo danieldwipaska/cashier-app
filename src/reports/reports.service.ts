@@ -32,10 +32,25 @@ export class ReportsService {
     }
   }
 
-  async findAll(): Promise<Response<Report[]>> {
+  async findAll(from: string, to: string): Promise<Response<Report[]>> {
     try {
-      const reports: Report[] = await this.reportModel.find();
+      let reports: Report[] = await this.reportModel
+        .find()
+        .sort({ createdAt: -1 });
       if (!reports.length) throw new NotFoundException('Report Not Found');
+
+      if (from && to) {
+        const timeInterval: { from: number; to: number } = {
+          from: Date.parse(from),
+          to: Date.parse(to),
+        };
+
+        reports = reports.filter(
+          (report: Report) =>
+            report.createdAt >= timeInterval.from &&
+            report.createdAt <= timeInterval.to,
+        );
+      }
 
       return {
         status: 200,
