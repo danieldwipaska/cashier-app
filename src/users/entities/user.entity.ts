@@ -1,24 +1,18 @@
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
 import { HydratedDocument } from 'mongoose';
 
-export type FnbDocument = HydratedDocument<Fnb>;
+export type UserDocument = HydratedDocument<User>;
 
 @Schema()
-export class Fnb {
+export class User {
   @Prop()
   id: string;
 
   @Prop({ required: true })
-  name: string;
+  username: string;
 
   @Prop({ required: true })
-  category: string;
-
-  @Prop({ required: true })
-  price: number;
-
-  @Prop()
-  availability: boolean;
+  password: string;
 
   @Prop()
   createdAt: number;
@@ -27,4 +21,4 @@ export class Fnb {
   updatedAt: number;
 }
 
-export const FnbSchema = SchemaFactory.createForClass(Fnb);
+export const UserSchema = SchemaFactory.createForClass(User);

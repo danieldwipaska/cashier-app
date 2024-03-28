@@ -5,6 +5,8 @@ import { FnbsModule } from './fnbs/fnbs.module';
 import { MongooseModule } from '@nestjs/mongoose';
 import { CategoriesModule } from './categories/categories.module';
 import { ReportsModule } from './reports/reports.module';
+import { AuthModule } from './auth/auth.module';
+import { UsersModule } from './users/users.module';
 
 @Module({
   imports: [
@@ -12,6 +14,8 @@ import { ReportsModule } from './reports/reports.module';
     MongooseModule.forRoot('mongodb://localhost:27017/bahariCashFlow'),
     CategoriesModule,
     ReportsModule,
+    AuthModule,
+    UsersModule,
   ],
   controllers: [AppController],
   providers: [AppService],

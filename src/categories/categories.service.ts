@@ -5,7 +5,7 @@ import { Category } from './entities/category.entity';
 import Response from 'src/interfaces/response.interface';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
-import { v4 as uuidv4 } from 'uuid';
+import { v4 } from 'uuid';
 
 @Injectable()
 export class CategoriesService {
@@ -18,7 +18,7 @@ export class CategoriesService {
   ): Promise<Response<Category>> {
     try {
       const newCategory = new this.categoryModel({
-        id: uuidv4(),
+        id: v4(),
         ...createCategoryDto,
         createdAt: Date.now(),
         updatedAt: Date.now(),
@@ -27,7 +27,7 @@ export class CategoriesService {
       const category: Category = await newCategory.save();
 
       return {
-        status: 201,
+        statusCode: 201,
         message: 'CREATED',
         data: category,
       };
@@ -42,7 +42,7 @@ export class CategoriesService {
       const categories: Category[] = await this.categoryModel.find();
 
       return {
-        status: 200,
+        statusCode: 200,
         message: 'OK',
         data: categories,
       };
@@ -58,7 +58,7 @@ export class CategoriesService {
       if (!category) throw new NotFoundException('Category Not Found');
 
       return {
-        status: 200,
+        statusCode: 200,
         message: 'OK',
         data: category,
       };
@@ -81,7 +81,7 @@ export class CategoriesService {
       if (!category) throw new NotFoundException('Category Not Found');
 
       return {
-        status: 200,
+        statusCode: 200,
         message: 'OK',
         data: category,
       };
@@ -99,7 +99,7 @@ export class CategoriesService {
       if (!category) throw new NotFoundException();
 
       return {
-        status: 200,
+        statusCode: 200,
         message: 'OK',
         data: category,
       };

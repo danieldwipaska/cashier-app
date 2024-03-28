@@ -27,16 +27,16 @@ export class FnbsController {
 
   @Get(':id')
   findOne(@Param('id') id: string) {
-    return this.fnbsService.findOne(+id);
+    return this.fnbsService.findOne(id);
   }
 
   @Patch(':id')
   update(@Param('id') id: string, @Body() updateFnbDto: UpdateFnbDto) {
-    return this.fnbsService.update(+id, updateFnbDto);
+    return this.fnbsService.update(id, updateFnbDto);
   }
 
   @Delete(':id')
   remove(@Param('id') id: string) {
-    return this.fnbsService.remove(+id);
+    return this.fnbsService.remove(id);
   }
 }

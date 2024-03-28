@@ -1,5 +1,8 @@
 export default interface Response<T> {
-  status: number;
+  statusCode: number;
   message: string;
-  data: T;
+  error?: string;
+  data?: T;
+  accessToken?: string;
+  refreshToken?: string;
 }

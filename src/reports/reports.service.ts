@@ -22,7 +22,7 @@ export class ReportsService {
       const report = await newReport.save();
 
       return {
-        status: 201,
+        statusCode: 201,
         message: 'CREATED',
         data: report,
       };
@@ -53,7 +53,7 @@ export class ReportsService {
       }
 
       return {
-        status: 200,
+        statusCode: 200,
         message: 'OK',
         data: reports,
       };
@@ -69,7 +69,7 @@ export class ReportsService {
       if (!report) throw new NotFoundException('Report Not Found');
 
       return {
-        status: 200,
+        statusCode: 200,
         message: 'OK',
         data: report,
       };
@@ -92,7 +92,7 @@ export class ReportsService {
       if (!report) throw new NotFoundException('Report Not Found');
 
       return {
-        status: 200,
+        statusCode: 200,
         message: 'OK',
         data: report,
       };
@@ -108,7 +108,7 @@ export class ReportsService {
       if (!report) throw new NotFoundException('Report Not Found');
 
       return {
-        status: 200,
+        statusCode: 200,
         message: 'OK',
         data: report,
       };
