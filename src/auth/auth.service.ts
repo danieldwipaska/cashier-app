@@ -7,12 +7,9 @@ import {
 } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import Response from 'src/interfaces/response.interface';
-import { User } from 'src/users/entities/user.entity';
 import { UsersService } from 'src/users/users.service';
 import * as bcrypt from 'bcrypt';
-
-import { ExceptionsHandler } from '@nestjs/core/exceptions/exceptions-handler';
-import { CreateCategoryDto } from 'src/categories/dto/create-category.dto';
+import { Prisma, User } from '@prisma/client';
 
 @Injectable()
 export class AuthService {
@@ -21,12 +18,10 @@ export class AuthService {
     private jwtService: JwtService,
   ) {}
 
-  async register(username: string, password: string): Promise<Response<User>> {
+  async register(data: Prisma.UserCreateInput): Promise<Response<User>> {
     try {
-      const registerUser: Response<User> = await this.usersService.create({
-        username,
-        password,
-      });
+      const registerUser: Response<User> = await this.usersService.create(data);
+
       if (!registerUser) throw new BadRequestException('Bad Request');
 
       return registerUser;

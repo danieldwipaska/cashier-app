@@ -3,56 +3,56 @@ import {
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
-import { CreateUserDto } from './dto/create-user.dto';
-import { UpdateUserDto } from './dto/update-user.dto';
-import { InjectModel } from '@nestjs/mongoose';
-import { User } from './entities/user.entity';
-import { Model } from 'mongoose';
 import Response from 'src/interfaces/response.interface';
 import { v4 } from 'uuid';
 import * as bcrypt from 'bcrypt';
+import { PrismaService } from 'src/prisma.service';
+import { Prisma, User } from '@prisma/client';
 
 @Injectable()
 export class UsersService {
-  constructor(@InjectModel(User.name) private userModel: Model<User>) {}
+  constructor(private prisma: PrismaService) {}
 
-  async create(createUserDto: CreateUserDto): Promise<Response<User>> {
+  async create(data: Prisma.UserCreateInput): Promise<Response<User>> {
     try {
-      const foundUser: Response<User> = await this.findOneByUsername(
-        createUserDto.username,
-      );
-      if (foundUser.data)
-        throw new BadRequestException('Username Already Exists');
+      const user = await this.prisma.user.findUnique({
+        where: { username: data.username },
+      });
+      if (user) throw new BadRequestException('Username Already Exists');
 
       const salt = await bcrypt.genSalt();
-      const hash = await bcrypt.hash(createUserDto.password, salt);
+      data.password = await bcrypt.hash(data.password, salt);
 
-      const newUser = new this.userModel({
-        id: v4(),
-        ...createUserDto,
-        password: hash,
-        createdAt: Date.now(),
-        updatedAt: Date.now(),
-      });
+      try {
+        const newUser = await this.prisma.user.create({
+          data,
+        });
 
-      const user: User = await newUser.save();
-
-      return {
-        statusCode: 201,
-        message: 'CREATED',
-        data: user,
-      };
+        return {
+          statusCode: 201,
+          message: 'CREATED',
+          data: newUser,
+        };
+      } catch (error) {
+        console.log(error);
+        throw error;
+      }
     } catch (error) {
       console.log(error);
       throw error;
     }
   }
 
-  async findAll(): Promise<User[]> {
+  async findAll(): Promise<Response<User[]>> {
     try {
-      const users: User[] = await this.userModel.find();
+      const users = await this.prisma.user.findMany();
+      if (!users.length) throw new NotFoundException('User Not Found');
 
-      return users;
+      return {
+        statusCode: 201,
+        message: 'CREATED',
+        data: users,
+      };
     } catch (error) {
       console.log(error);
       throw error;
@@ -61,8 +61,7 @@ export class UsersService {
 
   async findOne(id: string): Promise<Response<User>> {
     try {
-      const user: User = await this.userModel.findOne({ id });
-      if (!user) throw new NotFoundException('User Not Found');
+      const user = await this.prisma.user.findUnique({ where: { id } });
 
       return {
         statusCode: 200,
@@ -77,7 +76,7 @@ export class UsersService {
 
   async findOneByUsername(username: string): Promise<Response<User>> {
     try {
-      const user: User = await this.userModel.findOne({ username });
+      const user = await this.prisma.user.findUnique({ where: { username } });
 
       return {
         statusCode: 200,
@@ -90,11 +89,11 @@ export class UsersService {
     }
   }
 
-  update(id: number, updateUserDto: UpdateUserDto) {
+  update(id: string, data: Prisma.UserUpdateInput) {
     return `This action updates a #${id} user`;
   }
 
-  remove(id: number) {
+  remove(id: string) {
     return `This action removes a #${id} user`;
   }
 }

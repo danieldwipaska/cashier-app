@@ -1,33 +1,25 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
-import { CreateFnbDto } from './dto/create-fnb.dto';
-import { UpdateFnbDto } from './dto/update-fnb.dto';
-import { InjectModel } from '@nestjs/mongoose';
-import { Fnb } from './entities/fnb.entity';
-import { Model } from 'mongoose';
 import Response from '../interfaces/response.interface';
 import { v4 } from 'uuid';
+import { PrismaService } from 'src/prisma.service';
+import { Fnbs, Prisma } from '@prisma/client';
 
 @Injectable()
 export class FnbsService {
-  constructor(@InjectModel(Fnb.name) private fnbModel: Model<Fnb>) {}
+  constructor(private prisma: PrismaService) {}
 
-  async create(createFnbDto: CreateFnbDto): Promise<Response<Fnb>> {
-    createFnbDto.price = Number(createFnbDto.price);
-
-    const newFnb = new this.fnbModel({
-      id: v4(),
-      ...createFnbDto,
-      availability: true,
-      createdAt: Date.now(),
-      updatedAt: Date.now(),
-    });
-
+  async create(data: Prisma.FnbsCreateInput): Promise<Response<Fnbs>> {
     try {
-      const fnb: Fnb = await newFnb.save();
+      const fnb = await this.prisma.fnbs.create({
+        data,
+        include: {
+          category: true,
+        },
+      });
 
       return {
         statusCode: 201,
-        message: 'CREATED',
+        message: 'OK',
         data: fnb,
       };
     } catch (error) {
@@ -36,9 +28,14 @@ export class FnbsService {
     }
   }
 
-  async findAll(): Promise<Response<Fnb[]>> {
+  async findAll(): Promise<Response<Fnbs[]>> {
     try {
-      const fnbs: Fnb[] = await this.fnbModel.find().exec();
+      const fnbs = await this.prisma.fnbs.findMany({
+        include: { category: true },
+        orderBy: {
+          created_at: 'asc',
+        },
+      });
 
       return {
         statusCode: 200,
@@ -51,15 +48,13 @@ export class FnbsService {
     }
   }
 
-  async findOne(id: string): Promise<Response<Fnb>> {
+  async findOne(id: string): Promise<Response<Fnbs>> {
     try {
-      const fnb: Fnb = await this.fnbModel.findOne({ id });
-      if (!fnb)
-        return {
-          statusCode: 404,
-          message: 'NOT FOUND',
-          data: fnb,
-        };
+      const fnb = await this.prisma.fnbs.findUnique({
+        where: { id },
+        include: { category: true },
+      });
+      if (!fnb) throw new NotFoundException(`Fnb not found`);
 
       return {
         statusCode: 200,
@@ -72,19 +67,22 @@ export class FnbsService {
     }
   }
 
-  async update(id: string, updateFnbDto: UpdateFnbDto): Promise<Response<Fnb>> {
+  async update(
+    id: string,
+    data: Prisma.FnbsUpdateInput,
+  ): Promise<Response<Fnbs>> {
     try {
-      const updatedFnb: Fnb = await this.fnbModel.findOneAndUpdate(
-        { id },
-        updateFnbDto,
-        { returnDocument: 'after' },
-      );
-      if (!updatedFnb) throw new NotFoundException('Fnb Not Found');
+      const fnb = await this.prisma.fnbs.update({
+        where: { id },
+        include: { category: true },
+        data,
+      });
+      if (!fnb) throw new NotFoundException('Fnb Not Found');
 
       return {
         statusCode: 200,
         message: 'OK',
-        data: updatedFnb,
+        data: fnb,
       };
     } catch (error) {
       console.error(error);
@@ -92,21 +90,25 @@ export class FnbsService {
     }
   }
 
-  async remove(id: string): Promise<Response<Fnb>> {
+  async remove(id: string): Promise<Response<Fnbs>> {
     try {
-      const removedFnb: Fnb = await this.fnbModel.findOneAndDelete({ id });
-      if (!removedFnb)
-        return {
-          statusCode: 404,
-          message: 'NOT FOUND',
-          data: null,
-        };
+      const fnb = await this.prisma.fnbs.findUnique({
+        where: { id },
+      });
+      if (!fnb) throw new NotFoundException('Fnb Not Found');
 
-      return {
-        statusCode: 200,
-        message: 'OK',
-        data: removedFnb,
-      };
+      try {
+        const deletedFnb = await this.prisma.fnbs.delete({ where: { id } });
+
+        return {
+          statusCode: 200,
+          message: 'OK',
+          data: deletedFnb,
+        };
+      } catch (error) {
+        console.log(error);
+        throw error;
+      }
     } catch (error) {
       console.log(error);
       throw error;

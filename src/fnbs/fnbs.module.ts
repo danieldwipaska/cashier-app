@@ -1,11 +1,10 @@
 import { Module } from '@nestjs/common';
 import { FnbsService } from './fnbs.service';
 import { FnbsController } from './fnbs.controller';
-import { MongooseModule } from '@nestjs/mongoose';
-import { Fnb, FnbSchema } from './entities/fnb.entity';
+import { PrismaModule } from 'src/prisma.module';
 
 @Module({
-  imports: [MongooseModule.forFeature([{ name: Fnb.name, schema: FnbSchema }])],
+  imports: [PrismaModule],
   controllers: [FnbsController],
   providers: [FnbsService],
 })

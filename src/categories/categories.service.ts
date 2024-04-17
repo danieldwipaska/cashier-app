@@ -1,36 +1,39 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
-import { CreateCategoryDto } from './dto/create-category.dto';
-import { UpdateCategoryDto } from './dto/update-category.dto';
-import { Category } from './entities/category.entity';
+import {
+  BadRequestException,
+  Injectable,
+  NotFoundException,
+} from '@nestjs/common';
 import Response from 'src/interfaces/response.interface';
-import { InjectModel } from '@nestjs/mongoose';
-import { Model } from 'mongoose';
+
 import { v4 } from 'uuid';
+import { PrismaService } from 'src/prisma.service';
+import { Category, Prisma } from '@prisma/client';
 
 @Injectable()
 export class CategoriesService {
-  constructor(
-    @InjectModel(Category.name) private categoryModel: Model<Category>,
-  ) {}
+  constructor(private prisma: PrismaService) {}
 
-  async create(
-    createCategoryDto: CreateCategoryDto,
-  ): Promise<Response<Category>> {
+  async create(data: Prisma.CategoryCreateInput): Promise<Response<Category>> {
     try {
-      const newCategory = new this.categoryModel({
-        id: v4(),
-        ...createCategoryDto,
-        createdAt: Date.now(),
-        updatedAt: Date.now(),
+      const category = await this.prisma.category.findUnique({
+        where: { name: data.name },
       });
+      if (category) throw new BadRequestException('Category Already Exists');
 
-      const category: Category = await newCategory.save();
+      try {
+        const category = await this.prisma.category.create({
+          data,
+        });
 
-      return {
-        statusCode: 201,
-        message: 'CREATED',
-        data: category,
-      };
+        return {
+          statusCode: 200,
+          message: 'OK',
+          data: category,
+        };
+      } catch (error) {
+        console.log(error);
+        throw error;
+      }
     } catch (error) {
       console.log(error);
       throw error;
@@ -39,7 +42,7 @@ export class CategoriesService {
 
   async findAll(): Promise<Response<Category[]>> {
     try {
-      const categories: Category[] = await this.categoryModel.find();
+      const categories = await this.prisma.category.findMany();
 
       return {
         statusCode: 200,
@@ -54,7 +57,7 @@ export class CategoriesService {
 
   async findOne(id: string): Promise<Response<Category>> {
     try {
-      const category: Category = await this.categoryModel.findOne({ id });
+      const category = await this.prisma.category.findUnique({ where: { id } });
       if (!category) throw new NotFoundException('Category Not Found');
 
       return {
@@ -70,15 +73,13 @@ export class CategoriesService {
 
   async update(
     id: string,
-    updateCategoryDto: UpdateCategoryDto,
+    data: Prisma.CategoryUpdateInput,
   ): Promise<Response<Category>> {
     try {
-      const category: Category = await this.categoryModel.findOneAndUpdate(
-        { id },
-        updateCategoryDto,
-        { returnDocument: 'after' },
-      );
-      if (!category) throw new NotFoundException('Category Not Found');
+      const category = await this.prisma.category.update({
+        where: { id },
+        data,
+      });
 
       return {
         statusCode: 200,
@@ -93,16 +94,23 @@ export class CategoriesService {
 
   async remove(id: string): Promise<Response<Category>> {
     try {
-      const category: Category = await this.categoryModel.findOneAndDelete({
-        id,
-      });
-      if (!category) throw new NotFoundException();
+      const category = await this.prisma.category.findUnique({ where: { id } });
+      if (!category) throw new NotFoundException('Category Not Found');
 
-      return {
-        statusCode: 200,
-        message: 'OK',
-        data: category,
-      };
+      try {
+        const deletedCategory = await this.prisma.category.delete({
+          where: { id },
+        });
+
+        return {
+          statusCode: 200,
+          message: 'OK',
+          data: deletedCategory,
+        };
+      } catch (error) {
+        console.log(error);
+        throw error;
+      }
     } catch (error) {
       console.log(error);
       throw error;

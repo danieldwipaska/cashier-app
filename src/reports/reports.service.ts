@@ -1,25 +1,17 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
-import { CreateReportDto } from './dto/create-report.dto';
-import { UpdateReportDto } from './dto/update-report.dto';
 import Response from 'src/interfaces/response.interface';
-import { Report } from './entities/report.entity';
-import { InjectModel } from '@nestjs/mongoose';
-import { Model } from 'mongoose';
+import { Prisma, Report } from '@prisma/client';
+import { PrismaService } from 'src/prisma.service';
 
 @Injectable()
 export class ReportsService {
-  constructor(@InjectModel(Report.name) private reportModel: Model<Report>) {}
+  constructor(private prisma: PrismaService) {}
 
-  async create(createReportDto: CreateReportDto): Promise<Response<Report>> {
+  async create(data: Prisma.ReportCreateInput): Promise<Response<Report>> {
     try {
-      const newReport = new this.reportModel({
-        id: String(Date.now()),
-        ...createReportDto,
-        createdAt: Date.now(),
-        updatedAt: Date.now(),
+      const report = await this.prisma.report.create({
+        data,
       });
-
-      const report = await newReport.save();
 
       return {
         statusCode: 201,
@@ -34,21 +26,21 @@ export class ReportsService {
 
   async findAll(from: string, to: string): Promise<Response<Report[]>> {
     try {
-      let reports: Report[] = await this.reportModel
-        .find()
-        .sort({ createdAt: -1 });
+      let reports = await this.prisma.report.findMany({
+        orderBy: { created_at: 'desc' },
+      });
       if (!reports.length) throw new NotFoundException('Report Not Found');
 
       if (from && to) {
-        const timeInterval: { from: number; to: number } = {
-          from: Date.parse(from),
-          to: Date.parse(to),
+        const timeInterval: { from: Date; to: Date } = {
+          from: new Date(from),
+          to: new Date(to),
         };
 
         reports = reports.filter(
           (report: Report) =>
-            report.createdAt >= timeInterval.from &&
-            report.createdAt <= timeInterval.to,
+            report.created_at >= timeInterval.from &&
+            report.created_at <= timeInterval.to,
         );
       }
 
@@ -65,7 +57,9 @@ export class ReportsService {
 
   async findOne(id: string): Promise<Response<Report>> {
     try {
-      const report: Report = await this.reportModel.findOne({ id });
+      const report = await this.prisma.report.findUnique({
+        where: { id },
+      });
       if (!report) throw new NotFoundException('Report Not Found');
 
       return {
@@ -80,15 +74,14 @@ export class ReportsService {
   }
 
   async update(
-    id: number,
-    updateReportDto: UpdateReportDto,
+    id: string,
+    data: Prisma.ReportUpdateInput,
   ): Promise<Response<Report>> {
     try {
-      const report: Report = await this.reportModel.findOneAndUpdate(
-        { id },
-        updateReportDto,
-        { returnDocument: 'after' },
-      );
+      const report = await this.prisma.report.update({
+        where: { id },
+        data,
+      });
       if (!report) throw new NotFoundException('Report Not Found');
 
       return {
@@ -104,14 +97,23 @@ export class ReportsService {
 
   async remove(id: string): Promise<Response<Report>> {
     try {
-      const report: Report = await this.reportModel.findOneAndDelete({ id });
+      const report = await this.prisma.report.findUnique({ where: { id } });
       if (!report) throw new NotFoundException('Report Not Found');
 
-      return {
-        statusCode: 200,
-        message: 'OK',
-        data: report,
-      };
+      try {
+        const deletedReport = await this.prisma.report.delete({
+          where: { id },
+        });
+
+        return {
+          statusCode: 200,
+          message: 'OK',
+          data: report,
+        };
+      } catch (error) {
+        console.log(error);
+        throw error;
+      }
     } catch (error) {
       console.log(error);
       throw error;

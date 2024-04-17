@@ -8,16 +8,15 @@ import {
   Delete,
 } from '@nestjs/common';
 import { FnbsService } from './fnbs.service';
-import { CreateFnbDto } from './dto/create-fnb.dto';
-import { UpdateFnbDto } from './dto/update-fnb.dto';
+import { Prisma } from '@prisma/client';
 
 @Controller('fnbs')
 export class FnbsController {
   constructor(private readonly fnbsService: FnbsService) {}
 
   @Post()
-  create(@Body() createFnbDto: CreateFnbDto) {
-    return this.fnbsService.create(createFnbDto);
+  create(@Body() data: Prisma.FnbsCreateInput) {
+    return this.fnbsService.create(data);
   }
 
   @Get()
@@ -31,8 +30,8 @@ export class FnbsController {
   }
 
   @Patch(':id')
-  update(@Param('id') id: string, @Body() updateFnbDto: UpdateFnbDto) {
-    return this.fnbsService.update(id, updateFnbDto);
+  update(@Param('id') id: string, @Body() data: Prisma.FnbsUpdateInput) {
+    return this.fnbsService.update(id, data);
   }
 
   @Delete(':id')
