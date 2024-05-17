@@ -8,6 +8,7 @@ import { ReportsModule } from './reports/reports.module';
 import { AuthModule } from './auth/auth.module';
 import { UsersModule } from './users/users.module';
 import { ConfigModule } from '@nestjs/config';
+import { CardsModule } from './cards/cards.module';
 
 @Module({
   imports: [
@@ -18,6 +19,7 @@ import { ConfigModule } from '@nestjs/config';
     AuthModule,
     UsersModule,
     ConfigModule.forRoot(),
+    CardsModule,
   ],
   controllers: [AppController],
   providers: [AppService],

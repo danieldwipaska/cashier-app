@@ -31,6 +31,17 @@ export class ReportsController {
     return this.reportsService.findOne(id);
   }
 
+  @Get('transactions/:cardNumber')
+  findAllByCardNumberAndCustomerId(
+    @Param('cardNumber') cardNumber: string,
+    @Query('customer_id') customer_id: string,
+  ) {
+    return this.reportsService.findAllByCardNumberAndCustomerId(
+      cardNumber,
+      customer_id,
+    );
+  }
+
   @Patch(':id')
   update(@Param('id') id: string, @Body() data: Prisma.ReportCreateInput) {
     return this.reportsService.update(id, data);

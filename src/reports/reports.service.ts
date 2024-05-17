@@ -73,6 +73,28 @@ export class ReportsService {
     }
   }
 
+  async findAllByCardNumberAndCustomerId(
+    cardNumber: string,
+    customerId: string,
+  ): Promise<Response<Report[]>> {
+    try {
+      const reports = await this.prisma.report.findMany({
+        where: {
+          AND: [{ card_number: cardNumber }, { customer_id: customerId }],
+        },
+        orderBy: { created_at: 'desc' },
+      });
+
+      return {
+        statusCode: 200,
+        message: 'OK',
+        data: reports,
+      };
+    } catch (error) {
+      console.log('nothing');
+    }
+  }
+
   async update(
     id: string,
     data: Prisma.ReportUpdateInput,

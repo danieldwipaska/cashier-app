@@ -6,6 +6,7 @@ import {
   Patch,
   Param,
   Delete,
+  Query,
 } from '@nestjs/common';
 import { FnbsService } from './fnbs.service';
 import { Prisma } from '@prisma/client';

@@ -4,7 +4,6 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 import Response from 'src/interfaces/response.interface';
-import { v4 } from 'uuid';
 import * as bcrypt from 'bcrypt';
 import { PrismaService } from 'src/prisma.service';
 import { Prisma, User } from '@prisma/client';

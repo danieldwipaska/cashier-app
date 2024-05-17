@@ -26,8 +26,8 @@ export class CategoriesService {
         });
 
         return {
-          statusCode: 200,
-          message: 'OK',
+          statusCode: 201,
+          message: 'CREATED',
           data: category,
         };
       } catch (error) {

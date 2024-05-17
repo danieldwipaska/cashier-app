@@ -44,16 +44,34 @@ model Fnbs {
 }
 
 model Report {
-  id             String   @id @default(uuid())
-  customer_name  String
-  collected_by   String
-  total_payment  Int
-  payment_method String
-  note           String
-  order_name     String[]
-  order_category String[]
-  order_amount   Int[]
-  order_price    Int[]
-  created_at     DateTime @default(now())
-  updated_at     DateTime @default(now()) @updatedAt
+  id              String   @id @default(uuid())
+  type            String
+  customer_name   String
+  customer_id     String   @default("")
+  card_number     String   @default("")
+  served_by       String
+  collected_by    String   @default("Greeter")
+  initial_balance Int      @default(0)
+  final_balance   Int      @default(0)
+  total_payment   Int
+  payment_method  String
+  note            String   @default("")
+  order_name      String[] @default([])
+  order_category  String[] @default([])
+  order_amount    Int[]    @default([])
+  order_price     Int[]    @default([])
+  created_at      DateTime @default(now())
+  updated_at      DateTime @default(now()) @updatedAt
+}
+
+model Card {
+  id            String   @id @default(uuid())
+  card_number   String   @unique
+  customer_id   String   @default("")
+  customer_name String   @default("")
+  balance       Int      @default(0)
+  status        String   @default("inactive")
+  is_member     Boolean
+  created_at    DateTime @default(now())
+  updated_at    DateTime @default(now()) @updatedAt
 }

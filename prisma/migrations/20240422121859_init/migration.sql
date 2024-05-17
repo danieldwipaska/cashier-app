@@ -1,0 +1,3 @@
+-- AlterTable
+ALTER TABLE "Card" ALTER COLUMN "balance" SET DEFAULT 0,
+ALTER COLUMN "is_member" DROP DEFAULT;
