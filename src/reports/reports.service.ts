@@ -2,24 +2,40 @@ import { Injectable, NotFoundException } from '@nestjs/common';
 import Response from 'src/interfaces/response.interface';
 import { Prisma, Report } from '@prisma/client';
 import { PrismaService } from 'src/prisma.service';
+import { CrewsService } from 'src/crews/crews.service';
 
 @Injectable()
 export class ReportsService {
-  constructor(private prisma: PrismaService) {}
+  constructor(
+    private prisma: PrismaService,
+    private crewsService: CrewsService,
+  ) {}
 
   async create(data: Prisma.ReportCreateInput): Promise<Response<Report>> {
     try {
-      const report = await this.prisma.report.create({
-        data,
-      });
+      // Check whether crew exists
+      const crew = await this.crewsService.findOne(data.crew_id);
+      if (!crew) throw new NotFoundException('Crew Not Found');
 
-      return {
-        statusCode: 201,
-        message: 'CREATED',
-        data: report,
-      };
+      try {
+        const report = await this.prisma.report.create({
+          data: {
+            ...data,
+            served_by: crew.data.name,
+            crew_id: crew.data.id,
+          },
+        });
+
+        return {
+          statusCode: 201,
+          message: 'CREATED',
+          data: report,
+        };
+      } catch (error) {
+        console.log(error);
+        throw error;
+      }
     } catch (error) {
-      console.log(error);
       throw error;
     }
   }

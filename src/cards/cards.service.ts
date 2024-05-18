@@ -4,13 +4,17 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 import { Card, Prisma, Report } from '@prisma/client';
+import { CrewsService } from 'src/crews/crews.service';
 import { ReportType } from 'src/enums/report';
 import Response from 'src/interfaces/response.interface';
 import { PrismaService } from 'src/prisma.service';
 
 @Injectable()
 export class CardsService {
-  constructor(private prisma: PrismaService) {}
+  constructor(
+    private prisma: PrismaService,
+    private crewsService: CrewsService,
+  ) {}
 
   async create(data: Prisma.CardCreateInput): Promise<Response<Card>> {
     try {
@@ -272,46 +276,55 @@ export class CardsService {
     data: Prisma.ReportCreateInput,
   ): Promise<Response<Report>> {
     try {
+      // Check whether card exists
       const card = await this.prisma.card.findUnique({ where: { id } });
       if (!card) throw new NotFoundException('Card Not Found');
 
       try {
-        const balance: number = card.balance - data.total_payment;
-        if (balance < 5000 && balance > 0)
-          throw new BadRequestException(
-            'Card Balance cannot be less than minimal balance',
-          );
+        // Check whether crew exists
+        const crew = await this.crewsService.findOne(data.crew_id);
+        if (!crew) throw new NotFoundException('Crew Not Found');
 
-        if (balance < 0)
-          throw new BadRequestException(
-            'Card Balance cannot be less than zero',
-          );
+        try {
+          const balance: number = card.balance - data.total_payment;
+          if (balance < 5000 && balance > 0)
+            throw new BadRequestException(
+              'Card Balance cannot be less than minimal balance',
+            );
 
-        const [updatedCard, report] = await this.prisma.$transaction([
-          this.prisma.card.update({
-            where: { id },
-            data: {
-              balance,
-            },
-          }),
-          this.prisma.report.create({
-            data: {
-              ...data,
-              initial_balance: card.balance,
-              final_balance: balance,
-              type: ReportType.PAY,
-              served_by: 'Greeter',
-            },
-          }),
-        ]);
+          if (balance < 0)
+            throw new BadRequestException(
+              'Card Balance cannot be less than zero',
+            );
 
-        return {
-          statusCode: 200,
-          message: 'OK',
-          data: report,
-        };
+          const [updatedCard, report] = await this.prisma.$transaction([
+            this.prisma.card.update({
+              where: { id },
+              data: {
+                balance,
+              },
+            }),
+            this.prisma.report.create({
+              data: {
+                ...data,
+                initial_balance: card.balance,
+                final_balance: balance,
+                type: ReportType.PAY,
+                served_by: crew.data.name,
+              },
+            }),
+          ]);
+
+          return {
+            statusCode: 200,
+            message: 'OK',
+            data: report,
+          };
+        } catch (error) {
+          console.log(error);
+          throw error;
+        }
       } catch (error) {
-        console.log(error);
         throw error;
       }
     } catch (error) {

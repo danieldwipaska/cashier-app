@@ -50,6 +50,7 @@ model Report {
   customer_id     String   @default("")
   card_number     String   @default("")
   served_by       String
+  crew_id         String   @default("")
   collected_by    String   @default("Greeter")
   initial_balance Int      @default(0)
   final_balance   Int      @default(0)
@@ -74,4 +75,13 @@ model Card {
   is_member     Boolean
   created_at    DateTime @default(now())
   updated_at    DateTime @default(now()) @updatedAt
+}
+
+model Crew {
+  id         String   @id @default(uuid())
+  name       String   @unique
+  code       String   @unique
+  position   String
+  created_at DateTime @default(now())
+  updated_at DateTime @default(now()) @updatedAt
 }

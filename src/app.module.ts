@@ -9,6 +9,7 @@ import { AuthModule } from './auth/auth.module';
 import { UsersModule } from './users/users.module';
 import { ConfigModule } from '@nestjs/config';
 import { CardsModule } from './cards/cards.module';
+import { CrewsModule } from './crews/crews.module';
 
 @Module({
   imports: [
@@ -20,6 +21,7 @@ import { CardsModule } from './cards/cards.module';
     UsersModule,
     ConfigModule.forRoot(),
     CardsModule,
+    CrewsModule,
   ],
   controllers: [AppController],
   providers: [AppService],
