@@ -19,6 +19,22 @@ model User {
   password   String
   created_at DateTime @default(now())
   updated_at DateTime @default(now()) @updatedAt
+  shop       Shop     @relation(fields: [shopId], references: [id])
+  shopId     String
+}
+
+model Shop {
+  id                   String   @id @default(uuid()) // @default(autoincrement())
+  code                 String   @unique
+  name                 String
+  discount             Int      @default(0)
+  discount_unit        String   @default("percent")
+  tax                  Int      @default(0)
+  service              Int      @default(0)
+  included_tax_service Boolean  @default(true)
+  created_at           DateTime @default(now())
+  updated_at           DateTime @default(now()) @updatedAt
+  User                 User[]
 }
 
 model Category {
@@ -33,36 +49,40 @@ model Category {
 }
 
 model Fnbs {
-  id           String   @id @default(uuid())
-  name         String   @unique
-  price        Int
-  availability Boolean  @default(true)
-  created_at   DateTime @default(now())
-  updated_at   DateTime @default(now()) @updatedAt
-  category     Category @relation(fields: [categoryId], references: [id])
-  categoryId   String
+  id               String   @id @default(uuid())
+  name             String   @unique
+  price            Int
+  availability     Boolean  @default(true)
+  discount_status  Boolean  @default(false)
+  discount_percent Int      @default(0)
+  created_at       DateTime @default(now())
+  updated_at       DateTime @default(now()) @updatedAt
+  category         Category @relation(fields: [categoryId], references: [id])
+  categoryId       String
 }
 
 model Report {
-  id              String   @id @default(uuid())
-  type            String
-  customer_name   String
-  customer_id     String   @default("")
-  card_number     String   @default("")
-  served_by       String
-  crew_id         String   @default("")
-  collected_by    String   @default("Greeter")
-  initial_balance Int      @default(0)
-  final_balance   Int      @default(0)
-  total_payment   Int
-  payment_method  String
-  note            String   @default("")
-  order_name      String[] @default([])
-  order_category  String[] @default([])
-  order_amount    Int[]    @default([])
-  order_price     Int[]    @default([])
-  created_at      DateTime @default(now())
-  updated_at      DateTime @default(now()) @updatedAt
+  id                     String    @id @default(uuid())
+  type                   String
+  customer_name          String
+  customer_id            String    @default("")
+  card_number            String    @default("")
+  served_by              String
+  crew_id                String    @default("")
+  collected_by           String    @default("Greeter")
+  initial_balance        Int       @default(0)
+  final_balance          Int       @default(0)
+  total_payment          Int
+  payment_method         String
+  note                   String    @default("")
+  order_name             String[]  @default([])
+  order_category         String[]  @default([])
+  order_amount           Int[]     @default([])
+  order_price            Int[]     @default([])
+  order_discount_status  Boolean[] @default([])
+  order_discount_percent Int[]     @default([])
+  created_at             DateTime  @default(now())
+  updated_at             DateTime  @default(now()) @updatedAt
 }
 
 model Card {

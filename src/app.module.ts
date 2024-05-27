@@ -10,6 +10,7 @@ import { UsersModule } from './users/users.module';
 import { ConfigModule } from '@nestjs/config';
 import { CardsModule } from './cards/cards.module';
 import { CrewsModule } from './crews/crews.module';
+import { ShopsModule } from './shops/shops.module';
 
 @Module({
   imports: [
@@ -22,6 +23,7 @@ import { CrewsModule } from './crews/crews.module';
     ConfigModule.forRoot(),
     CardsModule,
     CrewsModule,
+    ShopsModule,
   ],
   controllers: [AppController],
   providers: [AppService],
