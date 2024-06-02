@@ -1,11 +1,20 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
-import { Prisma, Shop } from '@prisma/client';
+import {
+  ExecutionContext,
+  Injectable,
+  NotFoundException,
+} from '@nestjs/common';
+import { Prisma, Shop, User } from '@prisma/client';
+import { request } from 'express';
 import Response from 'src/interfaces/response.interface';
 import { PrismaService } from 'src/prisma.service';
+import { UsersService } from 'src/users/users.service';
 
 @Injectable()
 export class ShopsService {
-  constructor(private prisma: PrismaService) {}
+  constructor(
+    private prisma: PrismaService,
+    private usersService: UsersService,
+  ) {}
   async create(data: Prisma.ShopCreateInput): Promise<Response<Shop>> {
     try {
       const shop = await this.prisma.shop.create({

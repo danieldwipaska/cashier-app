@@ -42,19 +42,41 @@ export class UsersService {
     }
   }
 
-  async findAll(): Promise<Response<User[]>> {
-    try {
-      const users = await this.prisma.user.findMany();
-      if (!users.length) throw new NotFoundException('User Not Found');
+  async findAll(username?: string): Promise<Response<User[] | User>> {
+    if (username) {
+      try {
+        const user = await this.prisma.user.findUnique({
+          where: { username },
+          include: { shop: true },
+        });
+        if (!user) throw new NotFoundException('User Not Found');
 
-      return {
-        statusCode: 201,
-        message: 'CREATED',
-        data: users,
-      };
-    } catch (error) {
-      console.log(error);
-      throw error;
+        delete user.password;
+
+        return {
+          statusCode: 201,
+          message: 'CREATED',
+          data: user,
+        };
+      } catch (error) {
+        throw error;
+      }
+    } else {
+      try {
+        const users = await this.prisma.user.findMany();
+        if (!users.length) throw new NotFoundException('User Not Found');
+
+        users.forEach((user) => delete user.password);
+
+        return {
+          statusCode: 201,
+          message: 'CREATED',
+          data: users,
+        };
+      } catch (error) {
+        console.log(error);
+        throw error;
+      }
     }
   }
 
@@ -75,7 +97,10 @@ export class UsersService {
 
   async findOneByUsername(username: string): Promise<Response<User>> {
     try {
-      const user = await this.prisma.user.findUnique({ where: { username } });
+      const user = await this.prisma.user.findUnique({
+        where: { username },
+        include: { shop: true },
+      });
 
       return {
         statusCode: 200,

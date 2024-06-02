@@ -15,7 +15,6 @@ import { ShopsModule } from './shops/shops.module';
 @Module({
   imports: [
     FnbsModule,
-    MongooseModule.forRoot('mongodb://localhost:27017/bahariCashFlow'),
     CategoriesModule,
     ReportsModule,
     AuthModule,

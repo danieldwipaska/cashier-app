@@ -27,10 +27,13 @@ model Shop {
   id                   String   @id @default(uuid()) // @default(autoincrement())
   code                 String   @unique
   name                 String
+  discount_status      Boolean  @default(false)
   discount             Int      @default(0)
   discount_unit        String   @default("percent")
   tax                  Int      @default(0)
+  tax_status           Boolean  @default(false)
   service              Int      @default(0)
+  service_status       Boolean  @default(false)
   included_tax_service Boolean  @default(true)
   created_at           DateTime @default(now())
   updated_at           DateTime @default(now()) @updatedAt

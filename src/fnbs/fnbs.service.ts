@@ -33,7 +33,9 @@ export class FnbsService {
       const fnbs = await this.prisma.fnbs.findMany({
         include: { category: true },
         orderBy: {
-          created_at: 'asc',
+          category: {
+            name: 'asc',
+          },
         },
       });
 
@@ -72,8 +74,6 @@ export class FnbsService {
     data: Prisma.FnbsUpdateInput,
   ): Promise<Response<Fnbs>> {
     try {
-      console.log(id);
-      console.log(data);
       const fnb = await this.prisma.fnbs.update({
         where: { id },
         include: { category: true },
