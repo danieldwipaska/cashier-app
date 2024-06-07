@@ -42,23 +42,23 @@ export class UsersService {
     }
   }
 
-  async findAll(username?: string): Promise<Response<User[] | User>> {
-    if (username) {
+  async findAll(shopId?: string): Promise<Response<User[]>> {
+    if (shopId) {
       try {
-        const user = await this.prisma.user.findUnique({
-          where: { username },
-          include: { shop: true },
+        const users = await this.prisma.user.findMany({
+          where: { AND: [{ shopId }, { role: 'greeter' || 'server' }] },
         });
-        if (!user) throw new NotFoundException('User Not Found');
+        if (!users.length) throw new NotFoundException('User Not Found');
 
-        delete user.password;
+        users.forEach((user) => delete user.password);
 
         return {
           statusCode: 201,
           message: 'CREATED',
-          data: user,
+          data: users,
         };
       } catch (error) {
+        console.log(error);
         throw error;
       }
     } else {
@@ -113,11 +113,44 @@ export class UsersService {
     }
   }
 
-  update(id: string, data: Prisma.UserUpdateInput) {
-    return `This action updates a #${id} user`;
+  async update(
+    id: string,
+    data: Prisma.UserUpdateInput,
+  ): Promise<Response<User>> {
+    try {
+      const user = await this.prisma.user.update({
+        where: { id },
+        data,
+      });
+      if (!user) throw new NotFoundException('User Not Found');
+
+      return {
+        statusCode: 200,
+        message: 'OK',
+      };
+    } catch (error) {
+      throw error;
+    }
   }
 
-  remove(id: string) {
-    return `This action removes a #${id} user`;
+  async remove(id: string): Promise<Response<User>> {
+    try {
+      const user = await this.prisma.user.findUnique({ where: { id } });
+      if (!user) throw new NotFoundException('User Not Found');
+
+      try {
+        const deletedUser = await this.prisma.user.delete({ where: { id } });
+
+        return {
+          statusCode: 200,
+          message: 'OK',
+          data: deletedUser,
+        };
+      } catch (error) {
+        throw error;
+      }
+    } catch (error) {
+      throw error;
+    }
   }
 }

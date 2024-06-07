@@ -11,6 +11,7 @@ import { ConfigModule } from '@nestjs/config';
 import { CardsModule } from './cards/cards.module';
 import { CrewsModule } from './crews/crews.module';
 import { ShopsModule } from './shops/shops.module';
+import { MultiusersModule } from './multiusers/multiusers.module';
 
 @Module({
   imports: [
@@ -23,6 +24,7 @@ import { ShopsModule } from './shops/shops.module';
     CardsModule,
     CrewsModule,
     ShopsModule,
+    MultiusersModule,
   ],
   controllers: [AppController],
   providers: [AppService],
