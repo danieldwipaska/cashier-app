@@ -19,6 +19,7 @@ export class MultiusersService {
     username: string,
     data: Prisma.UserCreateInput,
   ): Promise<Response<User>> {
+    // console.log('test');
     try {
       const user = await this.usersService.findOneByUsername(username);
       if (user.data.role !== 'admin')
@@ -48,6 +49,8 @@ export class MultiusersService {
 
       try {
         const users = await this.usersService.findAll(user.data.shopId);
+
+        // console.log(users);
 
         return {
           statusCode: 200,
@@ -80,6 +83,21 @@ export class MultiusersService {
       } catch (error) {
         throw error;
       }
+    } catch (error) {
+      throw error;
+    }
+  }
+
+  async findUserConfiguration(username: string): Promise<Response<User>> {
+    try {
+      const user = await this.usersService.findOneByUsername(username);
+      if (!user) throw new NotFoundException('User Not Found');
+
+      return {
+        statusCode: 200,
+        message: 'OK',
+        data: user.data,
+      };
     } catch (error) {
       throw error;
     }

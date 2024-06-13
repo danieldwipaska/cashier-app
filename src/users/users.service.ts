@@ -45,10 +45,12 @@ export class UsersService {
   async findAll(shopId?: string): Promise<Response<User[]>> {
     if (shopId) {
       try {
-        const users = await this.prisma.user.findMany({
-          where: { AND: [{ shopId }, { role: 'greeter' || 'server' }] },
+        const allUsers = await this.prisma.user.findMany({
+          where: { shopId },
         });
-        if (!users.length) throw new NotFoundException('User Not Found');
+        if (!allUsers.length) throw new NotFoundException('User Not Found');
+
+        const users = allUsers.filter((user) => user.role !== 'admin');
 
         users.forEach((user) => delete user.password);
 

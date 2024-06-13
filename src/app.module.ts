@@ -12,6 +12,7 @@ import { CardsModule } from './cards/cards.module';
 import { CrewsModule } from './crews/crews.module';
 import { ShopsModule } from './shops/shops.module';
 import { MultiusersModule } from './multiusers/multiusers.module';
+import { MethodsModule } from './methods/methods.module';
 
 @Module({
   imports: [
@@ -25,6 +26,7 @@ import { MultiusersModule } from './multiusers/multiusers.module';
     CrewsModule,
     ShopsModule,
     MultiusersModule,
+    MethodsModule,
   ],
   controllers: [AppController],
   providers: [AppService],

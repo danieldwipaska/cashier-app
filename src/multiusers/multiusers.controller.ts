@@ -39,6 +39,12 @@ export class MultiusersController {
     return this.multiusersService.findOne(id, req.user.username);
   }
 
+  @UseGuards(AuthGuard)
+  @Get('configuration/:username')
+  findUserConfiguration(@Param('username') username: string) {
+    return this.multiusersService.findUserConfiguration(username);
+  }
+
   @Patch(':id')
   update(
     @Param('id') id: string,
@@ -48,6 +54,7 @@ export class MultiusersController {
     return this.multiusersService.update(id, data, req.user.username);
   }
 
+  @UseGuards(AuthGuard)
   @Delete(':id')
   remove(@Param('id') id: string, @Request() req) {
     return this.multiusersService.remove(id, req.user.username);
