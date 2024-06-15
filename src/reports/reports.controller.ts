@@ -22,8 +22,12 @@ export class ReportsController {
   }
 
   @Get()
-  findAll(@Query('from') from: string, @Query('to') to: string) {
-    return this.reportsService.findAll(from, to);
+  findAll(
+    @Query('from') from: string,
+    @Query('to') to: string,
+    @Query('status') status: string,
+  ) {
+    return this.reportsService.findAll(from, to, { status });
   }
 
   @Get(':id')

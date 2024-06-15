@@ -40,10 +40,15 @@ export class ReportsService {
     }
   }
 
-  async findAll(from: string, to: string): Promise<Response<Report[]>> {
+  async findAll(
+    from: string,
+    to: string,
+    filter: { status: string },
+  ): Promise<Response<Report[]>> {
     try {
       let reports = await this.prisma.report.findMany({
-        orderBy: { created_at: 'desc' },
+        orderBy: { updated_at: 'desc' },
+        where: filter,
       });
       if (!reports.length) throw new NotFoundException('Report Not Found');
 

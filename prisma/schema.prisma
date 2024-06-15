@@ -69,6 +69,7 @@ model Fnbs {
 model Report {
   id                     String    @id @default(uuid())
   type                   String
+  status                 String    @default("paid")
   customer_name          String
   customer_id            String    @default("")
   card_number            String    @default("")
@@ -78,8 +79,9 @@ model Report {
   initial_balance        Int       @default(0)
   final_balance          Int       @default(0)
   total_payment          Int
-  payment_method         String
+  payment_method         String    @default("")
   note                   String    @default("")
+  order_id               String[]  @default([])
   order_name             String[]  @default([])
   order_category         String[]  @default([])
   order_amount           Int[]     @default([])
