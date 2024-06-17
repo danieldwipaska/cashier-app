@@ -67,29 +67,34 @@ model Fnbs {
 }
 
 model Report {
-  id                     String    @id @default(uuid())
-  type                   String
-  status                 String    @default("paid")
-  customer_name          String
-  customer_id            String    @default("")
-  card_number            String    @default("")
-  served_by              String
-  crew_id                String    @default("")
-  collected_by           String    @default("Greeter")
-  initial_balance        Int       @default(0)
-  final_balance          Int       @default(0)
-  total_payment          Int
-  payment_method         String    @default("")
-  note                   String    @default("")
-  order_id               String[]  @default([])
-  order_name             String[]  @default([])
-  order_category         String[]  @default([])
-  order_amount           Int[]     @default([])
-  order_price            Int[]     @default([])
-  order_discount_status  Boolean[] @default([])
-  order_discount_percent Int[]     @default([])
-  created_at             DateTime  @default(now())
-  updated_at             DateTime  @default(now()) @updatedAt
+  id                              String    @id @default(uuid())
+  type                            String
+  status                          String    @default("paid")
+  customer_name                   String
+  customer_id                     String    @default("")
+  card_number                     String    @default("")
+  served_by                       String
+  crew_id                         String    @default("")
+  collected_by                    String    @default("Greeter")
+  initial_balance                 Int       @default(0)
+  final_balance                   Int       @default(0)
+  total_payment                   Int
+  tax_service_included            Boolean   @default(false)
+  total_payment_after_tax_service Int       @default(0)
+  tax_percent                     Int       @default(0)
+  service_percent                 Int       @default(0)
+  total_tax_service               Int       @default(0)
+  payment_method                  String    @default("")
+  note                            String    @default("")
+  order_id                        String[]  @default([])
+  order_name                      String[]  @default([])
+  order_category                  String[]  @default([])
+  order_amount                    Int[]     @default([])
+  order_price                     Int[]     @default([])
+  order_discount_status           Boolean[] @default([])
+  order_discount_percent          Int[]     @default([])
+  created_at                      DateTime  @default(now())
+  updated_at                      DateTime  @default(now()) @updatedAt
 }
 
 model Card {

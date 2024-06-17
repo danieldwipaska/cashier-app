@@ -84,7 +84,10 @@ export class UsersService {
 
   async findOne(id: string): Promise<Response<User>> {
     try {
-      const user = await this.prisma.user.findUnique({ where: { id } });
+      const user = await this.prisma.user.findUnique({
+        where: { id },
+        include: { shop: true },
+      });
 
       return {
         statusCode: 200,
