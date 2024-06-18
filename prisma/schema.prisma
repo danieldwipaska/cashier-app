@@ -90,9 +90,13 @@ model Report {
   order_name                      String[]  @default([])
   order_category                  String[]  @default([])
   order_amount                    Int[]     @default([])
-  order_price                     Int[]     @default([])
+  refunded_order_amount           Int[]     @default([])
+  order_price                     Float[]   @default([])
   order_discount_status           Boolean[] @default([])
-  order_discount_percent          Int[]     @default([])
+  order_discount_percent          Float[]   @default([])
+  deleted_status                  Boolean   @default(false)
+  refund_status                   Boolean   @default(false)
+  refund_target_id                String    @default("")
   created_at                      DateTime  @default(now())
   updated_at                      DateTime  @default(now()) @updatedAt
 }
