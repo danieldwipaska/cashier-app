@@ -33,9 +33,7 @@ export class FnbsService {
       const fnbs = await this.prisma.fnbs.findMany({
         include: { category: true },
         orderBy: {
-          category: {
-            name: 'asc',
-          },
+          name: 'asc',
         },
       });
 
