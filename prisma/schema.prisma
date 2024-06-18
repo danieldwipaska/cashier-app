@@ -78,12 +78,12 @@ model Report {
   collected_by                    String    @default("Greeter")
   initial_balance                 Int       @default(0)
   final_balance                   Int       @default(0)
-  total_payment                   Int
+  total_payment                   Float
   tax_service_included            Boolean   @default(false)
-  total_payment_after_tax_service Int       @default(0)
-  tax_percent                     Int       @default(0)
-  service_percent                 Int       @default(0)
-  total_tax_service               Int       @default(0)
+  total_payment_after_tax_service Float     @default(0)
+  tax_percent                     Float     @default(0)
+  service_percent                 Float     @default(0)
+  total_tax_service               Float     @default(0)
   payment_method                  String    @default("")
   note                            String    @default("")
   order_id                        String[]  @default([])
