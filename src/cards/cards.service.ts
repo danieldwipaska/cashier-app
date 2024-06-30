@@ -8,6 +8,7 @@ import { CrewsService } from 'src/crews/crews.service';
 import { ReportType } from 'src/enums/report';
 import Response from 'src/interfaces/response.interface';
 import { PrismaService } from 'src/prisma.service';
+import Randomize from 'src/utils/randomize.util';
 
 @Injectable()
 export class CardsService {
@@ -94,6 +95,7 @@ export class CardsService {
           }),
           this.prisma.report.create({
             data: {
+              report_id: Randomize.generateReportId('TOP', 6),
               type: ReportType.TOPUP_AND_ACTIVATE,
               customer_name: customerName,
               customer_id: customerId,
@@ -103,6 +105,7 @@ export class CardsService {
               initial_balance: card.balance,
               final_balance: balance,
               total_payment: addBalance,
+              total_payment_after_tax_service: addBalance,
               note,
             },
           }),
@@ -143,12 +146,14 @@ export class CardsService {
           }),
           this.prisma.report.create({
             data: {
+              report_id: Randomize.generateReportId('TOP', 6),
               customer_name: card.customer_name,
               customer_id: card.customer_id,
               card_number: card.card_number,
               payment_method: paymentMethod,
               served_by: 'Greeter',
               total_payment: addBalance,
+              total_payment_after_tax_service: addBalance,
               initial_balance: card.balance,
               final_balance: balance,
               type: ReportType.TOPUP,
@@ -194,11 +199,13 @@ export class CardsService {
           }),
           this.prisma.report.create({
             data: {
+              report_id: Randomize.generateReportId('CHE', 6),
               customer_name: card.customer_name,
               customer_id: card.customer_id,
               card_number: card.card_number,
               served_by: 'Greeter',
               total_payment: card.balance,
+              total_payment_after_tax_service: card.balance,
               initial_balance: card.balance,
               final_balance: 0,
               type: ReportType.CHECKOUT,
@@ -242,11 +249,13 @@ export class CardsService {
           }),
           this.prisma.report.create({
             data: {
+              report_id: Randomize.generateReportId('ADJ', 6),
               customer_name: card.customer_name,
               customer_id: card.customer_id,
               card_number: card.card_number,
               served_by: 'Greeter',
               total_payment: adjustedBalance - card.balance,
+              total_payment_after_tax_service: adjustedBalance - card.balance,
               initial_balance: card.balance,
               final_balance: adjustedBalance,
               type: ReportType.ADJUSTMENT,

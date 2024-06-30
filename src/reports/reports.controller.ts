@@ -47,8 +47,16 @@ export class ReportsController {
   }
 
   @Patch(':id')
-  update(@Param('id') id: string, @Body() data: Prisma.ReportCreateInput) {
+  update(@Param('id') id: string, @Body() data: Prisma.ReportUpdateInput) {
     return this.reportsService.update(id, data);
+  }
+
+  @Patch(':id/refund')
+  refundPartially(
+    @Param('id') id: string,
+    @Body() data: Prisma.ReportUpdateInput,
+  ) {
+    return this.reportsService.refundPartially(id, data);
   }
 
   @Delete(':id')

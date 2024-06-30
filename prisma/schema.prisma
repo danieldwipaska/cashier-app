@@ -68,6 +68,7 @@ model Fnbs {
 
 model Report {
   id                              String    @id @default(uuid())
+  report_id                       String
   type                            String
   status                          String    @default("paid")
   customer_name                   String
