@@ -42,7 +42,11 @@ export class CategoriesService {
 
   async findAll(): Promise<Response<Category[]>> {
     try {
-      const categories = await this.prisma.category.findMany();
+      const categories = await this.prisma.category.findMany({
+        include: {
+          Fnbs: true,
+        },
+      });
 
       return {
         statusCode: 200,
