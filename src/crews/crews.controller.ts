@@ -6,17 +6,21 @@ import {
   Patch,
   Param,
   Delete,
+  UseGuards,
+  Request,
 } from '@nestjs/common';
 import { CrewsService } from './crews.service';
 import { Prisma } from '@prisma/client';
+import { AuthGuard } from 'src/auth/auth.guard';
 
 @Controller('crews')
 export class CrewsController {
   constructor(private readonly crewsService: CrewsService) {}
 
+  @UseGuards(AuthGuard)
   @Post()
-  create(@Body() data: Prisma.CrewCreateInput) {
-    return this.crewsService.create(data);
+  create(@Body() data: Prisma.CrewCreateInput, @Request() req) {
+    return this.crewsService.create(data, req.user.username);
   }
 
   @Get()
