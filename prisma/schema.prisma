@@ -118,7 +118,7 @@ model Crew {
   id         String   @id @default(uuid())
   name       String   @unique
   code       String   @unique
-  position   String
+  position   Role     @default(admin)
   shop       Shop     @relation(fields: [shopId], references: [id])
   shopId     String
   created_at DateTime @default(now())
@@ -130,4 +130,11 @@ model Method {
   name       String
   created_at DateTime @default(now())
   updated_at DateTime @default(now()) @updatedAt
+}
+
+enum Role {
+  user
+  admin  
+  bartender
+  server
 }
