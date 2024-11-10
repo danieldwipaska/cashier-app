@@ -29,6 +29,11 @@ export class MethodsController {
     return this.methodsService.findOne(id);
   }
 
+  @Patch(':id')
+  update(@Param('id') id: string, @Body() data: Prisma.MethodUpdateInput) {
+    return this.methodsService.update(id, data);
+  }
+
   @Delete(':id')
   remove(@Param('id') id: string) {
     return this.methodsService.remove(id);

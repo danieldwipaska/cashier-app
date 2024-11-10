@@ -3,7 +3,7 @@ import Response from 'src/interfaces/response.interface';
 import { Prisma, Report } from '@prisma/client';
 import { PrismaService } from 'src/prisma.service';
 import { CrewsService } from 'src/crews/crews.service';
-import { ReportType } from 'src/enums/report';
+import Randomize from 'src/utils/randomize.util';
 
 @Injectable()
 export class ReportsService {
@@ -24,6 +24,7 @@ export class ReportsService {
             ...data,
             served_by: crew.data.name,
             crew_id: crew.data.id,
+            report_id: Randomize.generateReportId('PAY', 6),
           },
         });
 
@@ -44,7 +45,7 @@ export class ReportsService {
   async findAll(
     from: string,
     to: string,
-    filter: { status: string },
+    filter: { status: string, customer_name: string, customer_id: string, served_by: string },
   ): Promise<Response<Report[]>> {
     try {
       let reports = await this.prisma.report.findMany({

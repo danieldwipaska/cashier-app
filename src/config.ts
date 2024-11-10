@@ -1,0 +1,1 @@
+export let shopId = 'a5c0d431-a2fd-4e21-bdd4-6fc8bfe37ab2';

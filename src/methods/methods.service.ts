@@ -55,6 +55,23 @@ export class MethodsService {
     }
   }
 
+  async update(id: string, data: Prisma.MethodUpdateInput): Promise<Response<Method>> {
+    try {
+      const method = await this.prisma.method.update({
+        where: { id },
+        data,
+      });
+
+      return {
+        statusCode: 200,
+        message: 'OK',
+        data: method,
+      };
+    } catch (error) {
+      throw error
+    }
+  }
+
   async remove(id: string): Promise<Response<Method>> {
     try {
       const method = await this.prisma.method.findUnique({
