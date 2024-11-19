@@ -6,9 +6,12 @@ import {
   Param,
   Patch,
   Post,
+  Req,
+  UseGuards,
 } from '@nestjs/common';
 import { CardsService } from './cards.service';
 import { Prisma } from '@prisma/client';
+import { CrewGuard } from 'src/auth/auth.guard';
 
 @Controller('cards')
 export class CardsController {
@@ -29,6 +32,7 @@ export class CardsController {
     return this.cardsService.findOneByCardNumber(cardNumber);
   }
 
+  @UseGuards(CrewGuard)
   @Patch(':id/topup/activate')
   topUpAndActivate(
     @Param('id') id: string,
@@ -37,12 +41,8 @@ export class CardsController {
     @Body('addBalance') addBalance: string,
     @Body('paymentMethod') paymentMethod: string,
     @Body('note') note: string,
+    @Req() req: Request,
   ) {
-    // console.log(id);
-    // console.log(customerName);
-    // console.log(customerId);
-    // console.log(addBalance);
-
     return this.cardsService.topUpAndActivate(
       id,
       customerName,
@@ -50,35 +50,42 @@ export class CardsController {
       +addBalance,
       paymentMethod,
       note,
+      req,
     );
   }
 
+  @UseGuards(CrewGuard)
   @Patch(':id/topup')
   topUp(
     @Param('id') id: string,
     @Body('addBalance') addBalance: string,
     @Body('paymentMethod') paymentMethod: string,
     @Body('note') note: string,
+    @Req() req: Request,
   ) {
-    return this.cardsService.topUp(id, +addBalance, paymentMethod, note);
+    return this.cardsService.topUp(id, +addBalance, paymentMethod, note, req);
   }
 
+  @UseGuards(CrewGuard)
   @Patch(':id/checkout')
   checkout(
     @Param('id') id: string,
     @Body('paymentMethod') paymentMethod: string,
     @Body('note') note: string,
+    @Req() req: Request,
   ) {
-    return this.cardsService.checkout(id, paymentMethod, note);
+    return this.cardsService.checkout(id, paymentMethod, note, req);
   }
 
+  @UseGuards(CrewGuard)
   @Patch(':id/adjust')
   adjustBalance(
     @Param('id') id: string,
     @Body('adjustedBalance') adjustedBalance: string,
     @Body('note') note: string,
+    @Req() req: Request,
   ) {
-    return this.cardsService.adjustBalance(id, +adjustedBalance, note);
+    return this.cardsService.adjustBalance(id, +adjustedBalance, note, req);
   }
 
   @Patch(':id/pay')

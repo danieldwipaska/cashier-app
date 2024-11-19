@@ -75,6 +75,7 @@ export class CardsService {
     addBalance: number,
     paymentMethod: string,
     note: string,
+    req: any,
   ): Promise<Response<Report>> {
     try {
       const card = await this.prisma.card.findUnique({ where: { id } });
@@ -101,7 +102,7 @@ export class CardsService {
               customer_id: customerId,
               card_number: card.card_number,
               payment_method: paymentMethod,
-              served_by: 'Greeter',
+              served_by: req.crewName,
               initial_balance: card.balance,
               final_balance: balance,
               total_payment: addBalance,
@@ -131,6 +132,7 @@ export class CardsService {
     addBalance: number,
     paymentMethod: string,
     note: string,
+    req: any,
   ): Promise<Response<Report>> {
     try {
       const card = await this.prisma.card.findUnique({ where: { id } });
@@ -151,7 +153,7 @@ export class CardsService {
               customer_id: card.customer_id,
               card_number: card.card_number,
               payment_method: paymentMethod,
-              served_by: 'Greeter',
+              served_by: req.crewName,
               total_payment: addBalance,
               total_payment_after_tax_service: addBalance,
               initial_balance: card.balance,
@@ -181,6 +183,7 @@ export class CardsService {
     id: string,
     paymentMethod: string,
     note: string,
+    req: any,
   ): Promise<Response<Report>> {
     try {
       const card = await this.prisma.card.findUnique({ where: { id } });
@@ -203,7 +206,7 @@ export class CardsService {
               customer_name: card.customer_name,
               customer_id: card.customer_id,
               card_number: card.card_number,
-              served_by: 'Greeter',
+              served_by: req.crewName,
               total_payment: card.balance,
               total_payment_after_tax_service: card.balance,
               initial_balance: card.balance,
@@ -234,6 +237,7 @@ export class CardsService {
     id: string,
     adjustedBalance: number,
     note: string,
+    req: any,
   ): Promise<Response<Report>> {
     try {
       const card = await this.prisma.card.findUnique({ where: { id } });
@@ -253,7 +257,7 @@ export class CardsService {
               customer_name: card.customer_name,
               customer_id: card.customer_id,
               card_number: card.card_number,
-              served_by: 'Greeter',
+              served_by: req.crewName,
               total_payment: adjustedBalance - card.balance,
               total_payment_after_tax_service: adjustedBalance - card.balance,
               initial_balance: card.balance,
@@ -295,7 +299,8 @@ export class CardsService {
         if (!crew) throw new NotFoundException('Crew Not Found');
 
         try {
-          const balance: number = card.balance - data.total_payment;
+          const balance: number =
+            card.balance - data.total_payment_after_tax_service;
           if (balance < 5000 && balance > 0)
             throw new BadRequestException(
               'Card Balance cannot be less than minimal balance',
@@ -320,6 +325,7 @@ export class CardsService {
                 final_balance: balance,
                 type: ReportType.PAY,
                 served_by: crew.data.name,
+                report_id: Randomize.generateReportId('PAY', 6),
               },
             }),
           ]);
