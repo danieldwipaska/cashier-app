@@ -45,7 +45,12 @@ export class ReportsService {
   async findAll(
     from: string,
     to: string,
-    filter: { status: string, customer_name: string, customer_id: string, served_by: string },
+    filter: {
+      status: string;
+      customer_name: string;
+      customer_id: string;
+      served_by: string;
+    },
   ): Promise<Response<Report[]>> {
     try {
       let reports = await this.prisma.report.findMany({
@@ -141,7 +146,6 @@ export class ReportsService {
   }
 
   async refundPartially(id: string, data: any): Promise<Response<Report>> {
-    console.log(data);
     try {
       const report = await this.prisma.report.findUnique({ where: { id } });
       if (!report) throw new NotFoundException('Report Not Found');
@@ -151,9 +155,10 @@ export class ReportsService {
 
       data.refunded_order_amount.forEach((amount: number, index: number) => {
         if (report.order_discount_status[index]) {
+          console.log(report.order_discount_status[index]);
           total_payment +=
             amount *
-            (report.order_price[index] +
+            (report.order_price[index] -
               (report.order_price[index] *
                 report.order_discount_percent[index]) /
                 100);
@@ -162,20 +167,74 @@ export class ReportsService {
         }
       });
 
-      const total_tax_service =
-        total_payment * (report.service_percent / 100) +
-        (total_payment + total_payment * (report.service_percent / 100)) *
-          (report.tax_percent / 100);
+      let total_tax_service = 0;
+      let total_payment_after_tax_service = total_payment;
 
-      const total_payment_after_tax_service = total_payment + total_tax_service;
+      if (!report.tax_service_included) {
+        total_tax_service =
+          ((total_payment + (total_payment * report.service_percent) / 100) *
+            report.tax_percent) /
+          100;
 
-      try {
-        const [updatedReport, newReport] = await this.prisma.$transaction([
+        total_payment_after_tax_service += total_tax_service;
+      }
+
+      const updatedRefundedOrderAmount = report.refunded_order_amount.map(
+        (amount: number, i: number) => amount + data.refunded_order_amount[i],
+      );
+
+      if (report.card_number) {
+        try {
+          await this.prisma.$transaction([
+            this.prisma.report.update({
+              where: { id },
+              data: {
+                ...report,
+                refund_status: true,
+                refunded_order_amount: updatedRefundedOrderAmount,
+              },
+            }),
+            this.prisma.report.create({
+              data: {
+                ...report,
+                refund_target_id: report.id,
+                refund_status: true,
+                refunded_order_amount: data.refunded_order_amount,
+                id: undefined,
+                created_at: undefined,
+                updated_at: undefined,
+                type: 'refund',
+                total_payment: -total_payment,
+                total_tax_service,
+                total_payment_after_tax_service:
+                  -total_payment_after_tax_service,
+              },
+            }),
+            this.prisma.card.update({
+              where: { card_number: report.card_number },
+              data: {
+                balance: {
+                  increment: total_payment_after_tax_service,
+                },
+              },
+            }),
+          ]);
+
+          return {
+            statusCode: 200,
+            message: 'OK',
+          };
+        } catch (error) {
+          throw error;
+        }
+      } else {
+        await this.prisma.$transaction([
           this.prisma.report.update({
             where: { id },
             data: {
-              ...data,
+              ...report,
               refund_status: true,
+              refunded_order_amount: updatedRefundedOrderAmount,
             },
           }),
           this.prisma.report.create({
@@ -194,14 +253,6 @@ export class ReportsService {
             },
           }),
         ]);
-
-        return {
-          statusCode: 200,
-          message: 'OK',
-          data: updatedReport,
-        };
-      } catch (error) {
-        throw error;
       }
     } catch (error) {
       throw error;
@@ -214,7 +265,7 @@ export class ReportsService {
       if (!report) throw new NotFoundException('Report Not Found');
 
       try {
-        const deletedReport = await this.prisma.report.delete({
+        await this.prisma.report.delete({
           where: { id },
         });
 
