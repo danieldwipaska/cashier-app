@@ -4,6 +4,7 @@ import { Prisma, Report } from '@prisma/client';
 import { PrismaService } from 'src/prisma.service';
 import { CrewsService } from 'src/crews/crews.service';
 import Randomize from 'src/utils/randomize.util';
+import { ReportStatus } from 'src/enums/report';
 
 @Injectable()
 export class ReportsService {
@@ -254,6 +255,28 @@ export class ReportsService {
         ]);
       }
     } catch (error) {
+      throw error;
+    }
+  }
+
+  async cancelOpenBill(id: string): Promise<Response<Report>> {
+    try {
+      const report = await this.prisma.report.update({
+        where: {
+          id,
+        },
+        data: {
+          status: ReportStatus.CANCELLED,
+        },
+      });
+
+      return {
+        statusCode: 200,
+        message: 'OK',
+        data: report,
+      };
+    } catch (error) {
+      console.log(error);
       throw error;
     }
   }
