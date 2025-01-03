@@ -66,6 +66,11 @@ export class ReportsController {
     return this.reportsService.refundPartially(id, data);
   }
 
+  @Patch(':id/cancel')
+  cancelOpenBill(@Param('id') id: string) {
+    return this.reportsService.cancelOpenBill(id);
+  }
+
   @Delete(':id')
   remove(@Param('id') id: string) {
     return this.reportsService.remove(id);
