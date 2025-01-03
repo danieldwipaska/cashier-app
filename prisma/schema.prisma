@@ -135,7 +135,7 @@ model Method {
 enum ReportType {
   PAY
   REFUND
-  TOPUP_ACTIVATE
+  TOPUP_AND_ACTIVATE
   TOPUP
   ADJUSTMENT
   CHECKOUT
