@@ -155,7 +155,6 @@ export class ReportsService {
 
       data.refunded_order_amount.forEach((amount: number, index: number) => {
         if (report.order_discount_status[index]) {
-          console.log(report.order_discount_status[index]);
           total_payment +=
             amount *
             (report.order_price[index] -

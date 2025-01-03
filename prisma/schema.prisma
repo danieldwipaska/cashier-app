@@ -69,8 +69,8 @@ model Fnbs {
 model Report {
   id                              String    @id @default(uuid())
   report_id                       String
-  type                            String
-  status                          String    @default("paid")
+  type                            ReportType
+  status                          ReportStatus
   customer_name                   String
   customer_id                     String    @default("")
   card_number                     String    @default("")
@@ -130,4 +130,19 @@ model Method {
   name       String
   created_at DateTime @default(now())
   updated_at DateTime @default(now()) @updatedAt
+}
+
+enum ReportType {
+  PAY
+  REFUND
+  TOPUP_ACTIVATE
+  TOPUP
+  ADJUSTMENT
+  CHECKOUT
+}
+
+enum ReportStatus {
+  PAID
+  UNPAID
+  CANCELLED
 }
