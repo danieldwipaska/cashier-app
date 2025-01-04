@@ -264,6 +264,7 @@ export class ReportsService {
       const report = await this.prisma.report.update({
         where: {
           id,
+          status: ReportStatus.UNPAID,
         },
         data: {
           status: ReportStatus.CANCELLED,
