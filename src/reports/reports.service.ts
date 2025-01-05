@@ -5,6 +5,9 @@ import { PrismaService } from 'src/prisma.service';
 import { CrewsService } from 'src/crews/crews.service';
 import Randomize from 'src/utils/randomize.util';
 import { ReportStatus } from 'src/enums/report';
+import orderDiscountedPrice, {
+  calculateTaxService,
+} from 'src/utils/calculation.util';
 
 @Injectable()
 export class ReportsService {
@@ -156,12 +159,11 @@ export class ReportsService {
 
       data.refunded_order_amount.forEach((amount: number, index: number) => {
         if (report.order_discount_status[index]) {
-          total_payment +=
-            amount *
-            (report.order_price[index] -
-              (report.order_price[index] *
-                report.order_discount_percent[index]) /
-                100);
+          total_payment += orderDiscountedPrice({
+            price: report.order_price[index],
+            amount,
+            discountPercent: report.order_discount_percent[index],
+          });
         } else {
           total_payment += amount * report.order_price[index];
         }
@@ -171,10 +173,11 @@ export class ReportsService {
       let total_payment_after_tax_service = total_payment;
 
       if (!report.tax_service_included) {
-        total_tax_service =
-          ((total_payment + (total_payment * report.service_percent) / 100) *
-            report.tax_percent) /
-          100;
+        total_tax_service = calculateTaxService({
+          totalPayment: total_payment,
+          servicePercent: report.service_percent,
+          taxPercent: report.tax_percent,
+        });
 
         total_payment_after_tax_service += total_tax_service;
       }
