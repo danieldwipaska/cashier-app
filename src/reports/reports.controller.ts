@@ -7,6 +7,8 @@ import {
   Param,
   Delete,
   Query,
+  DefaultValuePipe,
+  ParseIntPipe,
 } from '@nestjs/common';
 import { ReportsService } from './reports.service';
 import { Prisma } from '@prisma/client';
@@ -28,7 +30,7 @@ export class ReportsController {
     @Query('customer_name') customer_name: string,
     @Query('customer_id') customer_id: string,
     @Query('served_by') served_by: string,
-    @Query('page') page: string,
+    @Query('page', new DefaultValuePipe(1), ParseIntPipe) page: number,
   ) {
     return this.reportsService.findAll(
       from,
@@ -39,7 +41,7 @@ export class ReportsController {
         customer_id,
         served_by,
       },
-      +page,
+      page,
     );
   }
 
