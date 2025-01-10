@@ -55,11 +55,17 @@ export class ReportsService {
       customer_id: string;
       served_by: string;
     },
+    page?: number,
   ): Promise<Response<Report[]>> {
+    const take = 15;
+    const skip = page ? (page - 1) * take : 0;
+
     try {
       let reports = await this.prisma.report.findMany({
         orderBy: { updated_at: 'desc' },
         where: filter,
+        take,
+        skip: skip || 0,
       });
       if (!reports.length) throw new NotFoundException('Report Not Found');
 
