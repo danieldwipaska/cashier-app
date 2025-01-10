@@ -7,6 +7,8 @@ import {
   Param,
   Delete,
   Query,
+  DefaultValuePipe,
+  ParseIntPipe,
 } from '@nestjs/common';
 import { FnbsService } from './fnbs.service';
 import { Prisma } from '@prisma/client';
@@ -21,8 +23,8 @@ export class FnbsController {
   }
 
   @Get()
-  findAll() {
-    return this.fnbsService.findAll();
+  findAll(@Query('page', new DefaultValuePipe(1), ParseIntPipe) page: number) {
+    return this.fnbsService.findAll(page);
   }
 
   @Get(':id')
