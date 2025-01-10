@@ -28,13 +28,19 @@ export class ReportsController {
     @Query('customer_name') customer_name: string,
     @Query('customer_id') customer_id: string,
     @Query('served_by') served_by: string,
+    @Query('page') page: string,
   ) {
-    return this.reportsService.findAll(from, to, {
-      status,
-      customer_name,
-      customer_id,
-      served_by,
-    });
+    return this.reportsService.findAll(
+      from,
+      to,
+      {
+        status,
+        customer_name,
+        customer_id,
+        served_by,
+      },
+      +page,
+    );
   }
 
   @Get(':id')
