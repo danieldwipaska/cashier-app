@@ -42,7 +42,7 @@ export class FnbsService {
           take,
           skip: skip || 0,
         }),
-        this.prisma.report.count(),
+        this.prisma.fnbs.count(),
       ]);
 
       const totalPage = Math.ceil(totalFnbs / take);
