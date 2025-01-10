@@ -1,6 +1,5 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import Response from '../interfaces/response.interface';
-import { v4 } from 'uuid';
 import { PrismaService } from 'src/prisma.service';
 import { Fnbs, Prisma } from '@prisma/client';
 
@@ -28,19 +27,45 @@ export class FnbsService {
     }
   }
 
-  async findAll(): Promise<Response<Fnbs[]>> {
+  async findAll(page?: number): Promise<Response<Fnbs[]>> {
+    const take = 15;
+    const skip = page ? (page - 1) * take : 0;
+
     try {
-      const fnbs = await this.prisma.fnbs.findMany({
-        include: { category: true },
-        orderBy: {
-          name: 'asc',
-        },
-      });
+      // eslint-disable-next-line prefer-const
+      let [fnbs, totalFnbs] = await Promise.all([
+        this.prisma.fnbs.findMany({
+          orderBy: {
+            name: 'asc',
+          },
+          include: { category: true },
+          take,
+          skip: skip || 0,
+        }),
+        this.prisma.fnbs.count(),
+      ]);
+
+      const totalPage = Math.ceil(totalFnbs / take);
+      const currentPage = page || 1;
+      const nextPage = currentPage < totalPage ? currentPage + 1 : null;
+      const prevPage = currentPage > 1 ? currentPage - 1 : null;
+      const hasNextPage = currentPage < totalPage;
+      const hasPrevPage = currentPage > 1;
 
       return {
         statusCode: 200,
         message: 'OK',
         data: fnbs,
+        pageMetaData: {
+          currentPage,
+          perPage: take,
+          totalItems: totalFnbs,
+          totalPages: totalPage,
+          nextPage,
+          prevPage,
+          hasNextPage,
+          hasPrevPage,
+        },
       };
     } catch (error) {
       console.log(error);
