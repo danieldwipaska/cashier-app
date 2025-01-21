@@ -6,8 +6,10 @@ import {
 import { Card, Prisma, Report } from '@prisma/client';
 import { CrewsService } from 'src/crews/crews.service';
 import { ReportType } from 'src/enums/report';
+import { PageMetaData } from 'src/interfaces/pagination.interface';
 import Response from 'src/interfaces/response.interface';
 import { PrismaService } from 'src/prisma.service';
+import { countSkip, paginate } from 'src/utils/pagination.util';
 import Randomize from 'src/utils/randomize.util';
 
 @Injectable()
@@ -32,17 +34,30 @@ export class CardsService {
     }
   }
 
-  async findAll(): Promise<Response<Card[]>> {
+  async findAll(page?: number): Promise<Response<Card[]>> {
+    const take = 15;
+    const skip = countSkip(take, page);
+
     try {
-      const cards = await this.prisma.card.findMany({
-        orderBy: { updated_at: 'desc' },
-      });
-      if (!cards.length) throw new NotFoundException('No cards found');
+      const [cards, totalCards] = await Promise.all([
+        this.prisma.card.findMany({
+          orderBy: {
+            updated_at: 'desc',
+          },
+          take,
+          skip: skip,
+        }),
+        this.prisma.card.count(),
+      ]);
+      if (!totalCards) throw new NotFoundException('No cards found');
+
+      const pageMetaData: PageMetaData = paginate(page, take, totalCards);
 
       return {
         statusCode: 200,
         message: 'OK',
         data: cards,
+        pageMetaData,
       };
     } catch (error) {
       console.log(error);
@@ -84,7 +99,7 @@ export class CardsService {
       try {
         const balance: number = card.balance + addBalance;
 
-        const [updatedCard, report] = await this.prisma.$transaction([
+        const [, report] = await this.prisma.$transaction([
           this.prisma.card.update({
             where: { id },
             data: {
@@ -141,7 +156,7 @@ export class CardsService {
       try {
         const balance: number = card.balance + addBalance;
 
-        const [updatedCard, report] = await this.prisma.$transaction([
+        const [, report] = await this.prisma.$transaction([
           this.prisma.card.update({
             where: { id },
             data: { balance },
@@ -190,7 +205,7 @@ export class CardsService {
       if (!card) throw new NotFoundException('Card Not Found');
 
       try {
-        const [updatedCard, report] = await this.prisma.$transaction([
+        const [, report] = await this.prisma.$transaction([
           this.prisma.card.update({
             where: { id },
             data: {
@@ -244,7 +259,7 @@ export class CardsService {
       if (!card) throw new NotFoundException('Card Not Found');
 
       try {
-        const [updatedCard, report] = await this.prisma.$transaction([
+        const [, report] = await this.prisma.$transaction([
           this.prisma.card.update({
             where: { id },
             data: {
@@ -311,7 +326,7 @@ export class CardsService {
               'Card Balance cannot be less than zero',
             );
 
-          const [updatedCard, report] = await this.prisma.$transaction([
+          const [, report] = await this.prisma.$transaction([
             this.prisma.card.update({
               where: { id },
               data: {

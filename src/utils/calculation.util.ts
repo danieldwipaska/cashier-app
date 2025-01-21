@@ -3,7 +3,7 @@ import {
   IOrderDiscountedPrice,
 } from 'src/interfaces/calculation.interface';
 
-export default function orderDiscountedPrice({
+export function orderDiscountedPrice({
   price,
   amount,
   discountPercent,

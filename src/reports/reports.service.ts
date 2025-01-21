@@ -5,7 +5,8 @@ import { PrismaService } from 'src/prisma.service';
 import { CrewsService } from 'src/crews/crews.service';
 import Randomize from 'src/utils/randomize.util';
 import { ReportStatus } from 'src/enums/report';
-import orderDiscountedPrice, {
+import {
+  orderDiscountedPrice,
   calculateTaxService,
 } from 'src/utils/calculation.util';
 
