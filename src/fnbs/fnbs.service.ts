@@ -2,6 +2,8 @@ import { Injectable, NotFoundException } from '@nestjs/common';
 import Response from '../interfaces/response.interface';
 import { PrismaService } from 'src/prisma.service';
 import { Fnbs, Prisma } from '@prisma/client';
+import { PageMetaData } from 'src/interfaces/pagination.interface';
+import { countSkip, paginate } from 'src/utils/pagination.util';
 
 @Injectable()
 export class FnbsService {
@@ -29,43 +31,31 @@ export class FnbsService {
 
   async findAll(page?: number): Promise<Response<Fnbs[]>> {
     const take = 15;
-    const skip = page ? (page - 1) * take : 0;
 
     try {
+      const skip = countSkip(take, page);
+
       // eslint-disable-next-line prefer-const
-      let [fnbs, totalFnbs] = await Promise.all([
+      const [fnbs, totalFnbs] = await Promise.all([
         this.prisma.fnbs.findMany({
           orderBy: {
             name: 'asc',
           },
           include: { category: true },
           take,
-          skip: skip || 0,
+          skip: skip,
         }),
         this.prisma.fnbs.count(),
       ]);
+      if (!fnbs) throw new NotFoundException('Fnbs Not Found');
 
-      const totalPage = Math.ceil(totalFnbs / take);
-      const currentPage = page || 1;
-      const nextPage = currentPage < totalPage ? currentPage + 1 : null;
-      const prevPage = currentPage > 1 ? currentPage - 1 : null;
-      const hasNextPage = currentPage < totalPage;
-      const hasPrevPage = currentPage > 1;
+      const pageMetaData: PageMetaData = paginate(page, take, totalFnbs);
 
       return {
         statusCode: 200,
         message: 'OK',
         data: fnbs,
-        pageMetaData: {
-          currentPage,
-          perPage: take,
-          totalItems: totalFnbs,
-          totalPages: totalPage,
-          nextPage,
-          prevPage,
-          hasNextPage,
-          hasPrevPage,
-        },
+        pageMetaData,
       };
     } catch (error) {
       console.log(error);

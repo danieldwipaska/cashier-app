@@ -3,7 +3,7 @@ export default class Randomize {
     const date = new Date();
 
     let randomString = '';
-    let characters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
+    const characters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
 
     for (let i = 0; i < length; i++) {
       randomString += characters.charAt(

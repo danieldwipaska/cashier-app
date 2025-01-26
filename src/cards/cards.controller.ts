@@ -1,11 +1,14 @@
 import {
   Body,
   Controller,
+  DefaultValuePipe,
   Delete,
   Get,
   Param,
+  ParseIntPipe,
   Patch,
   Post,
+  Query,
   Req,
   UseGuards,
 } from '@nestjs/common';
@@ -23,8 +26,8 @@ export class CardsController {
   }
 
   @Get()
-  findAll() {
-    return this.cardsService.findAll();
+  findAll(@Query('page', new DefaultValuePipe(1), ParseIntPipe) page: number) {
+    return this.cardsService.findAll(page);
   }
 
   @Get(':cardNumber')

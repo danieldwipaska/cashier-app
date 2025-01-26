@@ -1,3 +1,5 @@
+import { PageMetaData } from './pagination.interface';
+
 export default interface Response<T> {
   statusCode: number;
   message: string;
@@ -5,14 +7,5 @@ export default interface Response<T> {
   data?: T;
   accessToken?: string;
   refreshToken?: string;
-  pageMetaData?: {
-    currentPage: number;
-    nextPage: number | null;
-    prevPage: number | null;
-    hasNextPage: boolean;
-    hasPrevPage: boolean;
-    perPage: number;
-    totalItems: number;
-    totalPages: number;
-  };
+  pageMetaData?: PageMetaData;
 }
