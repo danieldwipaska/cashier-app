@@ -31,9 +31,10 @@ export class FnbsService {
 
   async findAll(page?: number): Promise<Response<Fnbs[]>> {
     const take = 15;
-    const skip = countSkip(take, page);
 
     try {
+      const skip = countSkip(take, page);
+
       // eslint-disable-next-line prefer-const
       const [fnbs, totalFnbs] = await Promise.all([
         this.prisma.fnbs.findMany({

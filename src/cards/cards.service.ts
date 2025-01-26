@@ -36,9 +36,9 @@ export class CardsService {
 
   async findAll(page?: number): Promise<Response<Card[]>> {
     const take = 15;
-    const skip = countSkip(take, page);
 
     try {
+      const skip = countSkip(take, page);
       const [cards, totalCards] = await Promise.all([
         this.prisma.card.findMany({
           orderBy: {
