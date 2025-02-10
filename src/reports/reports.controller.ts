@@ -9,17 +9,23 @@ import {
   Query,
   DefaultValuePipe,
   ParseIntPipe,
+  Request,
+  UseGuards,
 } from '@nestjs/common';
 import { ReportsService } from './reports.service';
 import { Prisma } from '@prisma/client';
+import { CreateReportDto } from './dto/create-report.dto';
+import { AuthGuard } from 'src/auth/auth.guard';
+import { UpdateReportDto } from './dto/update-report.dto';
 
 @Controller('reports')
 export class ReportsController {
   constructor(private readonly reportsService: ReportsService) {}
 
+  @UseGuards(AuthGuard)
   @Post()
-  create(@Body() data: Prisma.ReportCreateInput) {
-    return this.reportsService.create(data);
+  create(@Body() data: CreateReportDto, @Request() req) {
+    return this.reportsService.create(data, req.user.username);
   }
 
   @Get()
@@ -61,9 +67,14 @@ export class ReportsController {
     );
   }
 
+  @UseGuards(AuthGuard)
   @Patch(':id')
-  update(@Param('id') id: string, @Body() data: Prisma.ReportUpdateInput) {
-    return this.reportsService.update(id, data);
+  update(
+    @Param('id') id: string,
+    @Body() data: UpdateReportDto,
+    @Request() req,
+  ) {
+    return this.reportsService.update(id, data, req.user.username);
   }
 
   @Patch(':id/refund')
