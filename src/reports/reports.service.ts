@@ -9,6 +9,8 @@ import {
   orderDiscountedPrice,
   calculateTaxService,
 } from 'src/utils/calculation.util';
+import { CreateReportDto } from './dto/create-report.dto';
+import { UpdateReportDto } from './dto/update-report.dto';
 
 @Injectable()
 export class ReportsService {
@@ -17,32 +19,133 @@ export class ReportsService {
     private crewsService: CrewsService,
   ) {}
 
-  async create(data: Prisma.ReportCreateInput): Promise<Response<Report>> {
+  async create(
+    data: CreateReportDto,
+    username: string,
+  ): Promise<Response<Report>> {
+    const {
+      type,
+      status,
+      customer_name,
+      payment_method,
+      order_id,
+      order_amount,
+      crew_id,
+      note,
+    } = data;
+
+    const newReportData: Prisma.ReportCreateInput = {
+      report_id: Randomize.generateReportId('PAY', 6),
+      type,
+      status: status || ReportStatus.PAID,
+      customer_name,
+      crew_id,
+      payment_method,
+      order_id,
+      order_amount,
+      note: note || '',
+      total_payment: 0,
+      served_by: '',
+    };
+
     try {
-      // Check whether crew exists
-      const crew = await this.crewsService.findOne(data.crew_id);
+      const crew = await this.crewsService.findOne(crew_id);
       if (!crew) throw new NotFoundException('Crew Not Found');
 
-      try {
-        const report = await this.prisma.report.create({
-          data: {
-            ...data,
-            served_by: crew.data.name,
-            crew_id: crew.data.id,
-            report_id: Randomize.generateReportId('PAY', 6),
-          },
-        });
+      newReportData.served_by = crew.data.name;
+      newReportData.collected_by = crew.data.name;
+    } catch (error) {
+      throw error;
+    }
 
-        return {
-          statusCode: 201,
-          message: 'CREATED',
-          data: report,
-        };
-      } catch (error) {
-        console.log(error);
-        throw error;
+    // FOOD AND BEVERAGE DATA
+    const orderName: string[] = [];
+    const orderCategory: string[] = [];
+    const orderPrice: number[] = [];
+    const orderDiscountStatus: boolean[] = [];
+    const orderDiscountPercent: number[] = [];
+    const refundedOrderAmount: number[] = Array(order_id.length).fill(0);
+
+    try {
+      for (const id of order_id) {
+        const fnb = await this.prisma.fnbs.findUnique({
+          where: { id },
+          include: { category: true },
+        });
+        if (!fnb) throw new NotFoundException('Food And Beverage Not Found');
+
+        orderName.push(fnb.name);
+        orderPrice.push(fnb.price);
+        orderCategory.push(fnb.category.name);
+        orderDiscountPercent.push(fnb.discount_percent);
+        orderDiscountStatus.push(fnb.discount_status);
       }
     } catch (error) {
+      console.log(error);
+      throw error;
+    }
+
+    newReportData.order_name = orderName;
+    newReportData.order_price = orderPrice;
+    newReportData.order_category = orderCategory;
+    newReportData.order_discount_status = orderDiscountStatus;
+    newReportData.order_discount_percent = orderDiscountPercent;
+    newReportData.refunded_order_amount = refundedOrderAmount;
+
+    // CALCULATE TOTAL PAYMENT
+    let totalPayment = 0;
+    order_amount.forEach((amount: number, index: number) => {
+      totalPayment += orderDiscountedPrice({
+        price: orderPrice[index],
+        amount,
+        discountPercent: orderDiscountPercent[index],
+      });
+    });
+
+    newReportData.total_payment = totalPayment;
+
+    // CALCULATE TAX AND SERVICE
+    const user = await this.prisma.user.findUnique({
+      where: { username },
+      include: {
+        shop: true,
+      },
+    });
+    if (!user) throw new NotFoundException('User Not Found');
+
+    newReportData.tax_service_included = user.shop.included_tax_service;
+
+    let totalTaxService = 0;
+    let taxPercent = 0;
+    let servicePercent = 0;
+    if (!user.shop.included_tax_service) {
+      totalTaxService = calculateTaxService({
+        totalPayment,
+        servicePercent: user.shop.service,
+        taxPercent: user.shop.tax,
+      });
+      taxPercent = user.shop.tax;
+      servicePercent = user.shop.service;
+    }
+
+    newReportData.tax_percent = taxPercent;
+    newReportData.service_percent = servicePercent;
+    newReportData.total_tax_service = totalTaxService;
+    newReportData.total_payment_after_tax_service =
+      totalPayment + totalTaxService;
+
+    try {
+      const report = await this.prisma.report.create({
+        data: newReportData,
+      });
+
+      return {
+        statusCode: 201,
+        message: 'CREATED',
+        data: report,
+      };
+    } catch (error) {
+      console.log(error);
       throw error;
     }
   }
@@ -160,14 +263,121 @@ export class ReportsService {
 
   async update(
     id: string,
-    data: Prisma.ReportUpdateInput,
+    data: UpdateReportDto,
+    username: string,
   ): Promise<Response<Report>> {
+    const {
+      status,
+      customer_name,
+      payment_method,
+      order_id,
+      order_amount,
+      crew_id,
+      note,
+    } = data;
+
+    const reportData: Prisma.ReportUpdateInput = {
+      status: status || ReportStatus.PAID,
+      customer_name,
+      crew_id,
+      payment_method,
+      order_id,
+      order_amount,
+      note: note || '',
+      total_payment: 0,
+      served_by: '',
+    };
+
+    try {
+      const crew = await this.crewsService.findOne(crew_id);
+      if (!crew) throw new NotFoundException('Crew Not Found');
+
+      reportData.served_by = crew.data.name;
+      reportData.collected_by = crew.data.name;
+    } catch (error) {
+      throw error;
+    }
+
+    // FOOD AND BEVERAGE DATA
+    const orderName: string[] = [];
+    const orderCategory: string[] = [];
+    const orderPrice: number[] = [];
+    const orderDiscountStatus: boolean[] = [];
+    const orderDiscountPercent: number[] = [];
+    const refundedOrderAmount: number[] = Array(order_id.length).fill(0);
+
+    try {
+      for (const id of order_id) {
+        const fnb = await this.prisma.fnbs.findUnique({
+          where: { id },
+          include: { category: true },
+        });
+        if (!fnb) throw new NotFoundException('Food And Beverage Not Found');
+
+        orderName.push(fnb.name);
+        orderPrice.push(fnb.price);
+        orderCategory.push(fnb.category.name);
+        orderDiscountPercent.push(fnb.discount_percent);
+        orderDiscountStatus.push(fnb.discount_status);
+      }
+    } catch (error) {
+      console.log(error);
+      throw error;
+    }
+
+    reportData.order_name = orderName;
+    reportData.order_price = orderPrice;
+    reportData.order_category = orderCategory;
+    reportData.order_discount_status = orderDiscountStatus;
+    reportData.order_discount_percent = orderDiscountPercent;
+    reportData.refunded_order_amount = refundedOrderAmount;
+
+    // CALCULATE TOTAL PAYMENT
+    let totalPayment = 0;
+    order_amount.forEach((amount: number, index: number) => {
+      totalPayment += orderDiscountedPrice({
+        price: orderPrice[index],
+        amount,
+        discountPercent: orderDiscountPercent[index],
+      });
+    });
+
+    reportData.total_payment = totalPayment;
+
+    // CALCULATE TAX AND SERVICE
+    const user = await this.prisma.user.findUnique({
+      where: { username },
+      include: {
+        shop: true,
+      },
+    });
+    if (!user) throw new NotFoundException('User Not Found');
+
+    reportData.tax_service_included = user.shop.included_tax_service;
+
+    let totalTaxService = 0;
+    let taxPercent = 0;
+    let servicePercent = 0;
+    if (!user.shop.included_tax_service) {
+      totalTaxService = calculateTaxService({
+        totalPayment,
+        servicePercent: user.shop.service,
+        taxPercent: user.shop.tax,
+      });
+      taxPercent = user.shop.tax;
+      servicePercent = user.shop.service;
+    }
+
+    reportData.tax_percent = taxPercent;
+    reportData.service_percent = servicePercent;
+    reportData.total_tax_service = totalTaxService;
+    reportData.total_payment_after_tax_service = totalPayment + totalTaxService;
+
     try {
       const report = await this.prisma.report.update({
         where: { id },
-        data,
+        data: reportData,
       });
-      if (!report) throw new NotFoundException('Report Not Found');
 
       return {
         statusCode: 200,

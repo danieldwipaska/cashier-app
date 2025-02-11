@@ -5,12 +5,18 @@ import {
 } from '@nestjs/common';
 import { Card, Prisma, Report } from '@prisma/client';
 import { CrewsService } from 'src/crews/crews.service';
-import { ReportType } from 'src/enums/report';
+import { ReportStatus, ReportType } from 'src/enums/report';
 import { PageMetaData } from 'src/interfaces/pagination.interface';
 import Response from 'src/interfaces/response.interface';
 import { PrismaService } from 'src/prisma.service';
 import { countSkip, paginate } from 'src/utils/pagination.util';
 import Randomize from 'src/utils/randomize.util';
+import { CreateCardDto } from './dto/create-card.dto';
+import { CreateReportWithCardDto } from 'src/reports/dto/create-report.dto';
+import {
+  calculateTaxService,
+  orderDiscountedPrice,
+} from 'src/utils/calculation.util';
 
 @Injectable()
 export class CardsService {
@@ -19,7 +25,7 @@ export class CardsService {
     private crewsService: CrewsService,
   ) {}
 
-  async create(data: Prisma.CardCreateInput): Promise<Response<Card>> {
+  async create(data: CreateCardDto): Promise<Response<Card>> {
     try {
       const card = await this.prisma.card.create({ data });
 
@@ -301,62 +307,166 @@ export class CardsService {
 
   async pay(
     id: string,
-    data: Prisma.ReportCreateInput,
+    data: CreateReportWithCardDto,
+    username?: string,
   ): Promise<Response<Report>> {
+    const {
+      type,
+      status,
+      customer_name,
+      customer_id,
+      payment_method,
+      order_id,
+      order_amount,
+      crew_id,
+      note,
+    } = data;
+
+    const newReportData: Prisma.ReportCreateInput = {
+      report_id: Randomize.generateReportId('PAY', 6),
+      type,
+      status: status || ReportStatus.PAID,
+      customer_name,
+      customer_id,
+      crew_id,
+      payment_method,
+      order_id,
+      order_amount,
+      note: note || '',
+      total_payment: 0,
+      served_by: '',
+    };
+
     try {
-      // Check whether card exists
-      const card = await this.prisma.card.findUnique({ where: { id } });
+      const crew = await this.crewsService.findOne(crew_id);
+      if (!crew) throw new NotFoundException('Crew Not Found');
+
+      newReportData.served_by = crew.data.name;
+      newReportData.collected_by = crew.data.name;
+    } catch (error) {
+      throw error;
+    }
+
+    // FOOD AND BEVERAGE DATA
+    const orderName: string[] = [];
+    const orderCategory: string[] = [];
+    const orderPrice: number[] = [];
+    const orderDiscountStatus: boolean[] = [];
+    const orderDiscountPercent: number[] = [];
+    const refundedOrderAmount: number[] = Array(order_id.length).fill(0);
+
+    try {
+      for (const id of order_id) {
+        const fnb = await this.prisma.fnbs.findUnique({
+          where: { id },
+          include: { category: true },
+        });
+        if (!fnb) throw new NotFoundException('Food And Beverage Not Found');
+
+        orderName.push(fnb.name);
+        orderPrice.push(fnb.price);
+        orderCategory.push(fnb.category.name);
+        orderDiscountPercent.push(fnb.discount_percent);
+        orderDiscountStatus.push(fnb.discount_status);
+      }
+    } catch (error) {
+      console.log(error);
+      throw error;
+    }
+
+    newReportData.order_name = orderName;
+    newReportData.order_price = orderPrice;
+    newReportData.order_category = orderCategory;
+    newReportData.order_discount_status = orderDiscountStatus;
+    newReportData.order_discount_percent = orderDiscountPercent;
+    newReportData.refunded_order_amount = refundedOrderAmount;
+
+    // CALCULATE TOTAL PAYMENT
+    let totalPayment = 0;
+    order_amount.forEach((amount: number, index: number) => {
+      totalPayment += orderDiscountedPrice({
+        price: orderPrice[index],
+        amount,
+        discountPercent: orderDiscountPercent[index],
+      });
+    });
+
+    newReportData.total_payment = totalPayment;
+
+    // CALCULATE TAX AND SERVICE
+    const user = await this.prisma.user.findUnique({
+      where: { username },
+      include: {
+        shop: true,
+      },
+    });
+    if (!user) throw new NotFoundException('User Not Found');
+
+    newReportData.tax_service_included = user.shop.included_tax_service;
+
+    let totalTaxService = 0;
+    let taxPercent = 0;
+    let servicePercent = 0;
+    if (!user.shop.included_tax_service) {
+      totalTaxService = calculateTaxService({
+        totalPayment,
+        servicePercent: user.shop.service,
+        taxPercent: user.shop.tax,
+      });
+      taxPercent = user.shop.tax;
+      servicePercent = user.shop.service;
+    }
+
+    newReportData.tax_percent = taxPercent;
+    newReportData.service_percent = servicePercent;
+    newReportData.total_tax_service = totalTaxService;
+    newReportData.total_payment_after_tax_service =
+      totalPayment + totalTaxService;
+
+    let balance = 0;
+    try {
+      const card = await this.prisma.card.findUnique({
+        where: { id },
+      });
       if (!card) throw new NotFoundException('Card Not Found');
 
-      try {
-        // Check whether crew exists
-        const crew = await this.crewsService.findOne(data.crew_id);
-        if (!crew) throw new NotFoundException('Crew Not Found');
+      balance = card.balance - (totalPayment + totalTaxService);
+      if (balance < 5000 && balance > 0)
+        throw new BadRequestException(
+          'Card Balance cannot be less than minimal balance',
+        );
 
-        try {
-          const balance: number =
-            card.balance - data.total_payment_after_tax_service;
-          if (balance < 5000 && balance > 0)
-            throw new BadRequestException(
-              'Card Balance cannot be less than minimal balance',
-            );
+      if (balance < 0)
+        throw new BadRequestException('Card Balance cannot be less than zero');
 
-          if (balance < 0)
-            throw new BadRequestException(
-              'Card Balance cannot be less than zero',
-            );
+      newReportData.card_number = card.card_number;
+      newReportData.initial_balance = card.balance;
+      newReportData.final_balance = balance;
+    } catch (error) {
+      console.log(error);
+      throw error;
+    }
 
-          const [, report] = await this.prisma.$transaction([
-            this.prisma.card.update({
-              where: { id },
-              data: {
-                balance,
-              },
-            }),
-            this.prisma.report.create({
-              data: {
-                ...data,
-                initial_balance: card.balance,
-                final_balance: balance,
-                type: ReportType.PAY,
-                served_by: crew.data.name,
-                report_id: Randomize.generateReportId('PAY', 6),
-              },
-            }),
-          ]);
+    try {
+      const [, report] = await this.prisma.$transaction([
+        this.prisma.card.update({
+          where: {
+            id,
+          },
+          data: {
+            balance,
+          },
+        }),
+        this.prisma.report.create({
+          data: newReportData,
+        }),
+      ]);
 
-          return {
-            statusCode: 200,
-            message: 'OK',
-            data: report,
-          };
-        } catch (error) {
-          console.log(error);
-          throw error;
-        }
-      } catch (error) {
-        throw error;
-      }
+      return {
+        statusCode: 200,
+        message: 'OK',
+        data: report,
+      };
     } catch (error) {
       console.log(error);
       throw error;

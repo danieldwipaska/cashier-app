@@ -10,11 +10,13 @@ import {
   Post,
   Query,
   Req,
+  Request,
   UseGuards,
 } from '@nestjs/common';
 import { CardsService } from './cards.service';
 import { Prisma } from '@prisma/client';
-import { CrewGuard } from 'src/auth/auth.guard';
+import { AuthGuard, CrewGuard } from 'src/auth/auth.guard';
+import { CreateReportWithCardDto } from 'src/reports/dto/create-report.dto';
 
 @Controller('cards')
 export class CardsController {
@@ -91,9 +93,14 @@ export class CardsController {
     return this.cardsService.adjustBalance(id, +adjustedBalance, note, req);
   }
 
+  @UseGuards(AuthGuard)
   @Patch(':id/pay')
-  pay(@Param('id') id: string, @Body() data: Prisma.ReportCreateInput) {
-    return this.cardsService.pay(id, data);
+  pay(
+    @Param('id') id: string,
+    @Body() data: CreateReportWithCardDto,
+    @Request() req,
+  ) {
+    return this.cardsService.pay(id, data, req.user.username);
   }
 
   @Delete(':id')
