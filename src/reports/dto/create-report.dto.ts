@@ -29,8 +29,12 @@ export class CreateReportDto {
 
   @IsString()
   @IsNotEmpty()
-  @MaxLength(50, { message: 'Customer cannot be longer than 50 characters' })
-  @MinLength(2, { message: 'Customer cannot be shorter than 2 characters' })
+  @MaxLength(50, {
+    message: 'Payment method cannot be longer than 50 characters',
+  })
+  @MinLength(2, {
+    message: 'Payment method cannot be shorter than 2 characters',
+  })
   readonly payment_method: string;
 
   @IsArray()
@@ -40,11 +44,11 @@ export class CreateReportDto {
   readonly order_id: string[];
 
   @IsArray()
-  @ArrayMinSize(1, { message: 'Order ID cannot be empty' })
-  @ArrayMaxSize(50, { message: 'Order ID cannot be more than 50' })
+  @ArrayMinSize(1, { message: 'Order amount cannot be empty' })
+  @ArrayMaxSize(50, { message: 'Order amount cannot be more than 50' })
   @IsNumber({}, { each: true })
-  @Min(0, { each: true, message: 'Order ID must be a positive number' })
-  @Max(100, { each: true, message: 'Order ID must be less than 100' })
+  @Min(0, { each: true, message: 'Order amount must be a positive number' })
+  @Max(100, { each: true, message: 'Order amount must be less than 100' })
   readonly order_amount: number[];
 
   @IsUUID(4, { message: 'Crew ID must be a valid UUID' })
