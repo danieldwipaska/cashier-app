@@ -4,7 +4,7 @@ import { Prisma, Report } from '@prisma/client';
 import { PrismaService } from 'src/prisma.service';
 import { CrewsService } from 'src/crews/crews.service';
 import Randomize from 'src/utils/randomize.util';
-import { ReportStatus } from 'src/enums/report';
+import { ReportStatus, ReportType } from 'src/enums/report';
 import {
   orderDiscountedPrice,
   calculateTaxService,
@@ -154,15 +154,29 @@ export class ReportsService {
     from: string,
     to: string,
     filter: {
-      status: string;
+      status: ReportStatus;
       customer_name: string;
       customer_id: string;
       served_by: string;
+      type: ReportType | any;
     },
     page?: number,
+    pagination?: boolean,
   ): Promise<Response<Report[]>> {
-    const take = 15;
-    const skip = page ? (page - 1) * take : 0;
+    let take: number | undefined = 15;
+    let skip: number | undefined = page ? (page - 1) * take : 0;
+
+    if (pagination === false) {
+      take = undefined;
+      skip = undefined;
+    }
+
+    // Type can have more than one value
+    if (typeof filter.type === 'object') {
+      filter.type = {
+        in: filter.type,
+      };
+    }
 
     try {
       // eslint-disable-next-line prefer-const
@@ -177,8 +191,6 @@ export class ReportsService {
           where: filter,
         }),
       ]);
-
-      if (!reports.length) throw new NotFoundException('Report Not Found');
 
       if (from && to) {
         const timeInterval: { from: Date; to: Date } = {
