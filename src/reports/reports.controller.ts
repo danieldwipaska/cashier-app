@@ -11,12 +11,14 @@ import {
   ParseIntPipe,
   Request,
   UseGuards,
+  ParseBoolPipe,
 } from '@nestjs/common';
 import { ReportsService } from './reports.service';
 import { Prisma } from '@prisma/client';
 import { CreateReportDto } from './dto/create-report.dto';
 import { AuthGuard } from 'src/auth/auth.guard';
 import { UpdateReportDto } from './dto/update-report.dto';
+import { ReportStatus, ReportType } from 'src/enums/report';
 
 @Controller('reports')
 export class ReportsController {
@@ -32,11 +34,14 @@ export class ReportsController {
   findAll(
     @Query('from') from: string,
     @Query('to') to: string,
-    @Query('status') status: string,
+    @Query('status') status: ReportStatus,
     @Query('customer_name') customer_name: string,
     @Query('customer_id') customer_id: string,
     @Query('served_by') served_by: string,
+    @Query('type') type: ReportType | ReportType[],
     @Query('page', new DefaultValuePipe(1), ParseIntPipe) page: number,
+    @Query('pagination', new DefaultValuePipe(true), ParseBoolPipe)
+    pagination: boolean,
   ) {
     return this.reportsService.findAll(
       from,
@@ -46,8 +51,10 @@ export class ReportsController {
         customer_name,
         customer_id,
         served_by,
+        type,
       },
       page,
+      pagination,
     );
   }
 
