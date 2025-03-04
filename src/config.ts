@@ -1,1 +1,1 @@
-export let shopId = 'a5c0d431-a2fd-4e21-bdd4-6fc8bfe37ab2';
+export const shopId = 'e74d30b2-9912-450d-bf56-cd5337bd9b57';

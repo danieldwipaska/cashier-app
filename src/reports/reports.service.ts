@@ -108,24 +108,29 @@ export class ReportsService {
     const user = await this.prisma.user.findUnique({
       where: { username },
       include: {
-        shop: true,
+        shops: {
+          include: {
+            shop: true,
+          },
+        },
       },
     });
     if (!user) throw new NotFoundException('User Not Found');
 
-    newReportData.tax_service_included = user.shop.included_tax_service;
+    newReportData.tax_service_included =
+      user.shops[0].shop.included_tax_service;
 
     let totalTaxService = 0;
     let taxPercent = 0;
     let servicePercent = 0;
-    if (!user.shop.included_tax_service) {
+    if (!user.shops[0].shop.included_tax_service) {
       totalTaxService = calculateTaxService({
         totalPayment,
-        servicePercent: user.shop.service,
-        taxPercent: user.shop.tax,
+        servicePercent: user.shops[0].shop.service,
+        taxPercent: user.shops[0].shop.tax,
       });
-      taxPercent = user.shop.tax;
-      servicePercent = user.shop.service;
+      taxPercent = user.shops[0].shop.tax;
+      servicePercent = user.shops[0].shop.service;
     }
 
     newReportData.tax_percent = taxPercent;
@@ -360,24 +365,28 @@ export class ReportsService {
     const user = await this.prisma.user.findUnique({
       where: { username },
       include: {
-        shop: true,
+        shops: {
+          include: {
+            shop: true,
+          },
+        },
       },
     });
     if (!user) throw new NotFoundException('User Not Found');
 
-    reportData.tax_service_included = user.shop.included_tax_service;
+    reportData.tax_service_included = user.shops[0].shop.included_tax_service;
 
     let totalTaxService = 0;
     let taxPercent = 0;
     let servicePercent = 0;
-    if (!user.shop.included_tax_service) {
+    if (!user.shops[0].shop.included_tax_service) {
       totalTaxService = calculateTaxService({
         totalPayment,
-        servicePercent: user.shop.service,
-        taxPercent: user.shop.tax,
+        servicePercent: user.shops[0].shop.service,
+        taxPercent: user.shops[0].shop.tax,
       });
-      taxPercent = user.shop.tax;
-      servicePercent = user.shop.service;
+      taxPercent = user.shops[0].shop.tax;
+      servicePercent = user.shops[0].shop.service;
     }
 
     reportData.tax_percent = taxPercent;
@@ -459,7 +468,7 @@ export class ReportsService {
                 id: undefined,
                 created_at: undefined,
                 updated_at: undefined,
-                type: 'refund',
+                type: ReportType.REFUND,
                 total_payment: -total_payment,
                 total_tax_service,
                 total_payment_after_tax_service:
@@ -502,7 +511,7 @@ export class ReportsService {
               id: undefined,
               created_at: undefined,
               updated_at: undefined,
-              type: 'refund',
+              type: ReportType.REFUND,
               total_payment: -total_payment,
               total_tax_service,
               total_payment_after_tax_service: -total_payment_after_tax_service,

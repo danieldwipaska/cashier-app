@@ -6,9 +6,8 @@ import {
   Patch,
   Param,
   Delete,
-  Request,
   UseGuards,
-  Query,
+  Req,
 } from '@nestjs/common';
 import { UsersService } from './users.service';
 import { Prisma } from '@prisma/client';
@@ -25,8 +24,8 @@ export class UsersController {
 
   @UseGuards(AuthGuard)
   @Get()
-  findAll() {
-    return this.usersService.findAll();
+  findAll(@Req() req) {
+    return this.usersService.findAll(req.user);
   }
 
   @Get(':id')

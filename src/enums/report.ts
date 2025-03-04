@@ -1,14 +1,14 @@
 export enum ReportType {
-  TOPUP_AND_ACTIVATE = 'topup_and_activate',
-  TOPUP = 'topup',
-  PAY = 'pay',
-  CHECKOUT = 'checkout',
-  ADJUSTMENT = 'adjustment',
-  REFUND = 'refund',
+  TOPUP_AND_ACTIVATE = 'TOPUP_AND_ACTIVATE',
+  TOPUP = 'TOPUP',
+  PAY = 'PAY',
+  CHECKOUT = 'CHECKOUT',
+  ADJUSTMENT = 'ADJUSTMENT',
+  REFUND = 'REFUND',
 }
 
 export enum ReportStatus {
-  PAID = 'paid',
-  UNPAID = 'unpaid',
-  CANCELLED = 'cancelled',
+  PAID = 'PAID',
+  UNPAID = 'UNPAID',
+  CANCELLED = 'CANCELLED',
 }
