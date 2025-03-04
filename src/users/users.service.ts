@@ -42,11 +42,23 @@ export class UsersService {
     }
   }
 
-  async findAll(shopId?: string): Promise<Response<User[]>> {
+  async findAll(user?: any): Promise<Response<User[]>> {
+    const shopId = user.shops[0].shop;
     if (shopId) {
       try {
         const allUsers = await this.prisma.user.findMany({
-          where: { shopId },
+          where: {
+            shops: {
+              some: {
+                shop: shopId,
+              },
+            },
+          },
+          include: {
+            shops: {
+              include: { shop: true },
+            },
+          },
         });
         if (!allUsers.length) throw new NotFoundException('User Not Found');
 
@@ -86,7 +98,11 @@ export class UsersService {
     try {
       const user = await this.prisma.user.findUnique({
         where: { id },
-        include: { shop: true },
+        include: {
+          shops: {
+            include: { shop: true },
+          },
+        },
       });
 
       return {
@@ -104,7 +120,11 @@ export class UsersService {
     try {
       const user = await this.prisma.user.findUnique({
         where: { username },
-        include: { shop: true },
+        include: {
+          shops: {
+            include: { shop: true },
+          },
+        },
       });
 
       return {

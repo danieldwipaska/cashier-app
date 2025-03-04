@@ -119,6 +119,7 @@ export class CardsService {
             data: {
               report_id: Randomize.generateReportId('TOP', 6),
               type: ReportType.TOPUP_AND_ACTIVATE,
+              status: ReportStatus.PAID,
               customer_name: customerName,
               customer_id: customerId,
               card_number: card.card_number,
@@ -180,6 +181,7 @@ export class CardsService {
               initial_balance: card.balance,
               final_balance: balance,
               type: ReportType.TOPUP,
+              status: ReportStatus.PAID,
               note,
             },
           }),
@@ -234,6 +236,7 @@ export class CardsService {
               final_balance: 0,
               type: ReportType.CHECKOUT,
               payment_method: paymentMethod,
+              status: ReportStatus.PAID,
               note,
             },
           }),
@@ -284,6 +287,7 @@ export class CardsService {
               initial_balance: card.balance,
               final_balance: adjustedBalance,
               type: ReportType.ADJUSTMENT,
+              status: ReportStatus.PAID,
               payment_method: '',
               note,
             },
@@ -397,24 +401,29 @@ export class CardsService {
     const user = await this.prisma.user.findUnique({
       where: { username },
       include: {
-        shop: true,
+        shops: {
+          include: {
+            shop: true,
+          },
+        },
       },
     });
     if (!user) throw new NotFoundException('User Not Found');
 
-    newReportData.tax_service_included = user.shop.included_tax_service;
+    newReportData.tax_service_included =
+      user.shops[0].shop.included_tax_service;
 
     let totalTaxService = 0;
     let taxPercent = 0;
     let servicePercent = 0;
-    if (!user.shop.included_tax_service) {
+    if (!user.shops[0].shop.included_tax_service) {
       totalTaxService = calculateTaxService({
         totalPayment,
-        servicePercent: user.shop.service,
-        taxPercent: user.shop.tax,
+        servicePercent: user.shops[0].shop.service,
+        taxPercent: user.shops[0].shop.tax,
       });
-      taxPercent = user.shop.tax;
-      servicePercent = user.shop.service;
+      taxPercent = user.shops[0].shop.tax;
+      servicePercent = user.shops[0].shop.service;
     }
 
     newReportData.tax_percent = taxPercent;

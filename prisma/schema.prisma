@@ -20,8 +20,7 @@ model User {
   role       String   @default("admin")
   created_at DateTime @default(now())
   updated_at DateTime @default(now()) @updatedAt
-  shop       Shop     @relation(fields: [shopId], references: [id])
-  shopId     String
+  shops      UsersOnShops[]
 }
 
 model Shop {
@@ -38,8 +37,18 @@ model Shop {
   included_tax_service Boolean  @default(true)
   created_at           DateTime @default(now())
   updated_at           DateTime @default(now()) @updatedAt
-  User                 User[]
-  Crew                 Crew[]
+  users                UsersOnShops[]
+
+  Crew Crew[]
+}
+
+model UsersOnShops {
+  shop       Shop     @relation(fields: [shopId], references: [id])
+  shopId     String
+  user       User     @relation(fields: [userId], references: [id])
+  userId     String
+
+  @@id([shopId, userId])
 }
 
 model Category {

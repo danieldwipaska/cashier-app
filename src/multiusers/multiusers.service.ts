@@ -41,14 +41,14 @@ export class MultiusersService {
     }
   }
 
-  async findAll(username: string): Promise<Response<User[] | User>> {
+  async findAll(username: string): Promise<Response<User[] | any>> {
     try {
       const user = await this.usersService.findOneByUsername(username);
       if (user.data.role !== 'admin')
         throw new UnauthorizedException('Unauthorized User');
 
       try {
-        const users = await this.usersService.findAll(user.data.shopId);
+        const users = await this.usersService.findAll();
 
         // console.log(users);
 
