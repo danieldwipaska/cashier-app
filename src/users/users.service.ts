@@ -105,6 +105,10 @@ export class UsersService {
         },
       });
 
+      if (user) {
+        delete user.password;
+      }
+
       return {
         statusCode: 200,
         message: 'OK',
