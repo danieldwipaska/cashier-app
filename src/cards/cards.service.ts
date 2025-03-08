@@ -416,8 +416,8 @@ export class CardsService {
 
     const taxService = new TaxService(
       totalPayment,
-      user.shops[0].shop.tax,
       user.shops[0].shop.service,
+      user.shops[0].shop.tax,
     );
 
     if (!user.shops[0].shop.included_tax_service) {
