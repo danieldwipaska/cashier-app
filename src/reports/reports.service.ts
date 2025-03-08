@@ -5,7 +5,7 @@ import { PrismaService } from 'src/prisma.service';
 import { CrewsService } from 'src/crews/crews.service';
 import Randomize from 'src/utils/randomize.util';
 import { ReportStatus, ReportType } from 'src/enums/report';
-import { orderDiscountedPrice, TaxService } from 'src/utils/calculation.util';
+import { orderDiscountedPrice, ServiceTax } from 'src/utils/calculation.util';
 import { CreateReportDto } from './dto/create-report.dto';
 import { UpdateReportDto } from './dto/update-report.dto';
 
@@ -117,7 +117,7 @@ export class ReportsService {
     newReportData.tax_service_included =
       user.shops[0].shop.included_tax_service;
 
-    const taxService = new TaxService(
+    const taxService = new ServiceTax(
       totalPayment,
       user.shops[0].shop.service,
       user.shops[0].shop.tax,
@@ -370,7 +370,7 @@ export class ReportsService {
 
     reportData.tax_service_included = user.shops[0].shop.included_tax_service;
 
-    const taxService = new TaxService(
+    const taxService = new ServiceTax(
       totalPayment,
       user.shops[0].shop.service,
       user.shops[0].shop.tax,
@@ -425,7 +425,7 @@ export class ReportsService {
 
       let total_payment_after_tax_service = 0;
 
-      const taxService = new TaxService(
+      const taxService = new ServiceTax(
         total_payment,
         report.service_percent,
         report.tax_percent,

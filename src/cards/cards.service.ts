@@ -13,7 +13,7 @@ import { countSkip, paginate } from 'src/utils/pagination.util';
 import Randomize from 'src/utils/randomize.util';
 import { CreateCardDto } from './dto/create-card.dto';
 import { CreateReportWithCardDto } from 'src/reports/dto/create-report.dto';
-import { orderDiscountedPrice, TaxService } from 'src/utils/calculation.util';
+import { orderDiscountedPrice, ServiceTax } from 'src/utils/calculation.util';
 
 @Injectable()
 export class CardsService {
@@ -414,7 +414,7 @@ export class CardsService {
     newReportData.tax_service_included =
       user.shops[0].shop.included_tax_service;
 
-    const taxService = new TaxService(
+    const taxService = new ServiceTax(
       totalPayment,
       user.shops[0].shop.service,
       user.shops[0].shop.tax,
