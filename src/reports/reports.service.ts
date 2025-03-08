@@ -5,10 +5,7 @@ import { PrismaService } from 'src/prisma.service';
 import { CrewsService } from 'src/crews/crews.service';
 import Randomize from 'src/utils/randomize.util';
 import { ReportStatus, ReportType } from 'src/enums/report';
-import {
-  orderDiscountedPrice,
-  calculateTaxService,
-} from 'src/utils/calculation.util';
+import { orderDiscountedPrice, ServiceTax } from 'src/utils/calculation.util';
 import { CreateReportDto } from './dto/create-report.dto';
 import { UpdateReportDto } from './dto/update-report.dto';
 
@@ -120,24 +117,21 @@ export class ReportsService {
     newReportData.tax_service_included =
       user.shops[0].shop.included_tax_service;
 
-    let totalTaxService = 0;
-    let taxPercent = 0;
-    let servicePercent = 0;
+    const taxService = new ServiceTax(
+      totalPayment,
+      user.shops[0].shop.service,
+      user.shops[0].shop.tax,
+    );
+
     if (!user.shops[0].shop.included_tax_service) {
-      totalTaxService = calculateTaxService({
-        totalPayment,
-        servicePercent: user.shops[0].shop.service,
-        taxPercent: user.shops[0].shop.tax,
-      });
-      taxPercent = user.shops[0].shop.tax;
-      servicePercent = user.shops[0].shop.service;
+      newReportData.total_payment_after_tax_service = taxService.calculateTax();
+    } else {
+      newReportData.total_payment_after_tax_service = taxService.totalPayment;
     }
 
-    newReportData.tax_percent = taxPercent;
-    newReportData.service_percent = servicePercent;
-    newReportData.total_tax_service = totalTaxService;
-    newReportData.total_payment_after_tax_service =
-      totalPayment + totalTaxService;
+    newReportData.tax_percent = taxService.taxPercent;
+    newReportData.service_percent = taxService.servicePercent;
+    newReportData.total_tax_service = 0; // not yet handled
 
     try {
       const report = await this.prisma.report.create({
@@ -274,7 +268,7 @@ export class ReportsService {
         data: reports,
       };
     } catch (error) {
-      console.log('nothing');
+      console.log(error);
     }
   }
 
@@ -376,23 +370,21 @@ export class ReportsService {
 
     reportData.tax_service_included = user.shops[0].shop.included_tax_service;
 
-    let totalTaxService = 0;
-    let taxPercent = 0;
-    let servicePercent = 0;
+    const taxService = new ServiceTax(
+      totalPayment,
+      user.shops[0].shop.service,
+      user.shops[0].shop.tax,
+    );
+
     if (!user.shops[0].shop.included_tax_service) {
-      totalTaxService = calculateTaxService({
-        totalPayment,
-        servicePercent: user.shops[0].shop.service,
-        taxPercent: user.shops[0].shop.tax,
-      });
-      taxPercent = user.shops[0].shop.tax;
-      servicePercent = user.shops[0].shop.service;
+      reportData.total_payment_after_tax_service = taxService.calculateTax();
+    } else {
+      reportData.total_payment_after_tax_service = taxService.totalPayment;
     }
 
-    reportData.tax_percent = taxPercent;
-    reportData.service_percent = servicePercent;
-    reportData.total_tax_service = totalTaxService;
-    reportData.total_payment_after_tax_service = totalPayment + totalTaxService;
+    reportData.tax_percent = taxService.taxPercent;
+    reportData.service_percent = taxService.servicePercent;
+    reportData.total_tax_service = 0; // not yet handled
 
     try {
       const report = await this.prisma.report.update({
@@ -431,18 +423,21 @@ export class ReportsService {
         }
       });
 
-      let total_tax_service = 0;
-      let total_payment_after_tax_service = total_payment;
+      let total_payment_after_tax_service = 0;
+
+      const taxService = new ServiceTax(
+        total_payment,
+        report.service_percent,
+        report.tax_percent,
+      );
 
       if (!report.tax_service_included) {
-        total_tax_service = calculateTaxService({
-          totalPayment: total_payment,
-          servicePercent: report.service_percent,
-          taxPercent: report.tax_percent,
-        });
-
-        total_payment_after_tax_service += total_tax_service;
+        total_payment_after_tax_service = taxService.calculateTax();
+      } else {
+        total_payment_after_tax_service = taxService.totalPayment;
       }
+
+      const total_tax_service = 0; // not yet handled
 
       const updatedRefundedOrderAmount = report.refunded_order_amount.map(
         (amount: number, i: number) => amount + data.refunded_order_amount[i],

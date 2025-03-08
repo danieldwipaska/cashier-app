@@ -4,8 +4,12 @@ export interface IOrderDiscountedPrice {
   discountPercent: number;
 }
 
-export interface ICalculateTaxService {
+export interface ICalculateTax {
+  totalPaymentAfterService: number;
+  taxPercent: number;
+}
+
+export interface ICalculateService {
   totalPayment: number;
   servicePercent: number;
-  taxPercent: number;
 }

@@ -13,10 +13,7 @@ import { countSkip, paginate } from 'src/utils/pagination.util';
 import Randomize from 'src/utils/randomize.util';
 import { CreateCardDto } from './dto/create-card.dto';
 import { CreateReportWithCardDto } from 'src/reports/dto/create-report.dto';
-import {
-  calculateTaxService,
-  orderDiscountedPrice,
-} from 'src/utils/calculation.util';
+import { orderDiscountedPrice, ServiceTax } from 'src/utils/calculation.util';
 
 @Injectable()
 export class CardsService {
@@ -388,11 +385,15 @@ export class CardsService {
     // CALCULATE TOTAL PAYMENT
     let totalPayment = 0;
     order_amount.forEach((amount: number, index: number) => {
-      totalPayment += orderDiscountedPrice({
-        price: orderPrice[index],
-        amount,
-        discountPercent: orderDiscountPercent[index],
-      });
+      if (orderDiscountStatus) {
+        totalPayment += orderDiscountedPrice({
+          price: orderPrice[index],
+          amount,
+          discountPercent: orderDiscountPercent[index],
+        });
+      } else {
+        totalPayment += amount * orderPrice[index];
+      }
     });
 
     newReportData.total_payment = totalPayment;
@@ -413,24 +414,21 @@ export class CardsService {
     newReportData.tax_service_included =
       user.shops[0].shop.included_tax_service;
 
-    let totalTaxService = 0;
-    let taxPercent = 0;
-    let servicePercent = 0;
+    const taxService = new ServiceTax(
+      totalPayment,
+      user.shops[0].shop.service,
+      user.shops[0].shop.tax,
+    );
+
     if (!user.shops[0].shop.included_tax_service) {
-      totalTaxService = calculateTaxService({
-        totalPayment,
-        servicePercent: user.shops[0].shop.service,
-        taxPercent: user.shops[0].shop.tax,
-      });
-      taxPercent = user.shops[0].shop.tax;
-      servicePercent = user.shops[0].shop.service;
+      newReportData.total_payment_after_tax_service = taxService.calculateTax();
+    } else {
+      newReportData.total_payment_after_tax_service = totalPayment;
     }
 
-    newReportData.tax_percent = taxPercent;
-    newReportData.service_percent = servicePercent;
-    newReportData.total_tax_service = totalTaxService;
-    newReportData.total_payment_after_tax_service =
-      totalPayment + totalTaxService;
+    newReportData.tax_percent = taxService.taxPercent;
+    newReportData.service_percent = taxService.servicePercent;
+    newReportData.total_tax_service = 0; // not yet handled
 
     let balance = 0;
     try {
@@ -439,7 +437,7 @@ export class CardsService {
       });
       if (!card) throw new NotFoundException('Card Not Found');
 
-      balance = card.balance - (totalPayment + totalTaxService);
+      balance = card.balance - taxService.calculateTax();
       if (balance < 5000 && balance > 0)
         throw new BadRequestException(
           'Card Balance cannot be less than minimal balance',
