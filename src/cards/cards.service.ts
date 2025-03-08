@@ -411,7 +411,7 @@ export class CardsService {
     });
     if (!user) throw new NotFoundException('User Not Found');
 
-    newReportData.tax_service_included =
+    newReportData.included_tax_service =
       user.shops[0].shop.included_tax_service;
 
     const taxService = new ServiceTax(
@@ -428,7 +428,7 @@ export class CardsService {
 
     newReportData.tax_percent = taxService.taxPercent;
     newReportData.service_percent = taxService.servicePercent;
-    newReportData.total_tax_service = 0; // not yet handled
+    newReportData.total_tax = taxService.getTax();
 
     let balance = 0;
     try {

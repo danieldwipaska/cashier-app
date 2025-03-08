@@ -31,15 +31,12 @@ model Shop {
   discount             Int      @default(0)
   discount_unit        String   @default("percent")
   tax                  Int      @default(0)
-  tax_status           Boolean  @default(false)
   service              Int      @default(0)
-  service_status       Boolean  @default(false)
   included_tax_service Boolean  @default(true)
   created_at           DateTime @default(now())
   updated_at           DateTime @default(now()) @updatedAt
   users                UsersOnShops[]
-
-  Crew Crew[]
+  Crew                 Crew[]
 }
 
 model UsersOnShops {
@@ -56,9 +53,6 @@ model Category {
   name       String   @unique
   created_at DateTime @default(now())
   updated_at DateTime @default(now()) @updatedAt
-  //author    User?    @relation(fields: [authorId], references: [id])
-  //authorId   Int?
-
   Fnbs Fnbs[]
 }
 
@@ -89,11 +83,11 @@ model Report {
   initial_balance                 Int       @default(0)
   final_balance                   Int       @default(0)
   total_payment                   Float
-  tax_service_included            Boolean   @default(false)
+  included_tax_service            Boolean   @default(false)
   total_payment_after_tax_service Float     @default(0)
   tax_percent                     Float     @default(0)
   service_percent                 Float     @default(0)
-  total_tax_service               Float     @default(0)
+  total_tax                       Float     @default(0)
   payment_method                  String    @default("")
   note                            String    @default("")
   order_id                        String[]  @default([])
