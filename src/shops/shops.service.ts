@@ -1,10 +1,5 @@
-import {
-  ExecutionContext,
-  Injectable,
-  NotFoundException,
-} from '@nestjs/common';
-import { Prisma, Shop, User } from '@prisma/client';
-import { request } from 'express';
+import { Injectable, NotFoundException } from '@nestjs/common';
+import { Prisma, Shop } from '@prisma/client';
 import Response from 'src/interfaces/response.interface';
 import { PrismaService } from 'src/prisma.service';
 import { UsersService } from 'src/users/users.service';

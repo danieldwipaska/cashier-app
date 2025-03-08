@@ -1,7 +1,4 @@
-import {
-  ICalculateTaxService,
-  IOrderDiscountedPrice,
-} from 'src/interfaces/calculation.interface';
+import { IOrderDiscountedPrice } from 'src/interfaces/calculation.interface';
 
 export function orderDiscountedPrice({
   price,
@@ -13,13 +10,26 @@ export function orderDiscountedPrice({
   return result;
 }
 
-export const calculateTaxService = ({
-  totalPayment,
-  servicePercent,
-  taxPercent,
-}: ICalculateTaxService) => {
-  const result =
-    ((totalPayment * servicePercent) / 100 + totalPayment) * (taxPercent / 100);
+export class TaxService {
+  constructor(
+    readonly totalPayment: number,
+    readonly servicePercent: number,
+    readonly taxPercent: number,
+  ) {}
 
-  return result;
-};
+  getService(): number {
+    return (this.totalPayment * this.servicePercent) / 100;
+  }
+
+  calculateService(): number {
+    return this.getService() + this.totalPayment;
+  }
+
+  getTax(): number {
+    return (this.calculateService() * this.taxPercent) / 100;
+  }
+
+  calculateTax(): number {
+    return this.getTax() + this.calculateService();
+  }
+}
