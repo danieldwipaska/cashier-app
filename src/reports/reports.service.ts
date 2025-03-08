@@ -114,7 +114,7 @@ export class ReportsService {
     });
     if (!user) throw new NotFoundException('User Not Found');
 
-    newReportData.tax_service_included =
+    newReportData.included_tax_service =
       user.shops[0].shop.included_tax_service;
 
     const taxService = new ServiceTax(
@@ -131,7 +131,7 @@ export class ReportsService {
 
     newReportData.tax_percent = taxService.taxPercent;
     newReportData.service_percent = taxService.servicePercent;
-    newReportData.total_tax_service = 0; // not yet handled
+    newReportData.total_tax = taxService.getTax();
 
     try {
       const report = await this.prisma.report.create({
@@ -368,7 +368,7 @@ export class ReportsService {
     });
     if (!user) throw new NotFoundException('User Not Found');
 
-    reportData.tax_service_included = user.shops[0].shop.included_tax_service;
+    reportData.included_tax_service = user.shops[0].shop.included_tax_service;
 
     const taxService = new ServiceTax(
       totalPayment,
@@ -384,7 +384,7 @@ export class ReportsService {
 
     reportData.tax_percent = taxService.taxPercent;
     reportData.service_percent = taxService.servicePercent;
-    reportData.total_tax_service = 0; // not yet handled
+    reportData.total_tax = taxService.getTax(); // not yet handled
 
     try {
       const report = await this.prisma.report.update({
@@ -431,13 +431,13 @@ export class ReportsService {
         report.tax_percent,
       );
 
-      if (!report.tax_service_included) {
+      if (!report.included_tax_service) {
         total_payment_after_tax_service = taxService.calculateTax();
       } else {
         total_payment_after_tax_service = taxService.totalPayment;
       }
 
-      const total_tax_service = 0; // not yet handled
+      const total_tax = taxService.getTax();
 
       const updatedRefundedOrderAmount = report.refunded_order_amount.map(
         (amount: number, i: number) => amount + data.refunded_order_amount[i],
@@ -465,7 +465,7 @@ export class ReportsService {
                 updated_at: undefined,
                 type: ReportType.REFUND,
                 total_payment: -total_payment,
-                total_tax_service,
+                total_tax,
                 total_payment_after_tax_service:
                   -total_payment_after_tax_service,
               },
@@ -508,7 +508,7 @@ export class ReportsService {
               updated_at: undefined,
               type: ReportType.REFUND,
               total_payment: -total_payment,
-              total_tax_service,
+              total_tax,
               total_payment_after_tax_service: -total_payment_after_tax_service,
             },
           }),
