@@ -17,7 +17,7 @@ model User {
   id         String   @id @default(uuid()) // @default(autoincrement())
   username   String   @unique
   password   String
-  role       String   @default("admin")
+  role       Role     @default(ADMIN)
   created_at DateTime @default(now())
   updated_at DateTime @default(now()) @updatedAt
   shops      UsersOnShops[]
@@ -148,4 +148,11 @@ enum ReportStatus {
   PAID
   UNPAID
   CANCELLED
+}
+
+enum Role {
+  ADMIN
+  MANAGER
+  GREETER
+  SERVER
 }
