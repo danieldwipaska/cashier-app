@@ -9,6 +9,7 @@ import {
   Query,
   DefaultValuePipe,
   ParseIntPipe,
+  ParseBoolPipe,
 } from '@nestjs/common';
 import { FnbsService } from './fnbs.service';
 import { Prisma } from '@prisma/client';
@@ -23,8 +24,12 @@ export class FnbsController {
   }
 
   @Get()
-  findAll(@Query('page', new DefaultValuePipe(1), ParseIntPipe) page: number) {
-    return this.fnbsService.findAll(page);
+  findAll(
+    @Query('page', new DefaultValuePipe(1), ParseIntPipe) page: number,
+    @Query('pagination', new DefaultValuePipe(true), ParseBoolPipe)
+    pagination?: boolean,
+  ) {
+    return this.fnbsService.findAll(page, pagination);
   }
 
   @Get(':id')

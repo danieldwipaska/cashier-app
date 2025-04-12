@@ -29,11 +29,21 @@ export class FnbsService {
     }
   }
 
-  async findAll(page?: number): Promise<Response<Fnbs[]>> {
-    const take = 15;
+  async findAll(
+    page?: number,
+    pagination?: boolean,
+  ): Promise<Response<Fnbs[]>> {
+    let take: number | undefined;
+    let skip: number | undefined;
 
     try {
-      const skip = countSkip(take, page);
+      if (pagination === false) {
+        take = undefined;
+        skip = undefined;
+      } else {
+        take = 15;
+        skip = countSkip(take, page);
+      }
 
       // eslint-disable-next-line prefer-const
       const [fnbs, totalFnbs] = await Promise.all([
