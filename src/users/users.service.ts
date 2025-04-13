@@ -62,7 +62,7 @@ export class UsersService {
         });
         if (!allUsers.length) throw new NotFoundException('User Not Found');
 
-        const users = allUsers.filter((user) => user.role !== 'admin');
+        const users = allUsers.filter((user) => user.role !== 'ADMIN');
 
         users.forEach((user) => delete user.password);
 
@@ -120,7 +120,7 @@ export class UsersService {
     }
   }
 
-  async findOneByUsername(username: string): Promise<Response<User>> {
+  async findOneByUsername(username: string): Promise<Response<any>> {
     try {
       const user = await this.prisma.user.findUnique({
         where: { username },

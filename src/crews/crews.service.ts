@@ -3,16 +3,19 @@ import { Crew, Prisma } from '@prisma/client';
 import { shopId } from 'src/config';
 import Response from 'src/interfaces/response.interface';
 import { PrismaService } from 'src/prisma.service';
+import { UsersService } from 'src/users/users.service';
 
 @Injectable()
 export class CrewsService {
-  constructor(private prisma: PrismaService) {}
-  async create(data: any): Promise<Response<Crew>> {
+  constructor(private prisma: PrismaService, private usersService: UsersService,) {}
+  async create(data: any, username: string): Promise<Response<Crew>> {
     try {
+      const user = await this.usersService.findOneByUsername(username);
+      if (user.statusCode === 404) throw new NotFoundException('User not exist');
       const crew = await this.prisma.crew.create({
         data: {
           ...data,
-          shopId,
+          shopId: user.data.shops[0].shopId,
         },
       });
 

@@ -19,10 +19,9 @@ export class MultiusersService {
     username: string,
     data: Prisma.UserCreateInput,
   ): Promise<Response<User>> {
-    // console.log('test');
     try {
       const user = await this.usersService.findOneByUsername(username);
-      if (user.data.role !== 'admin')
+      if (user.data.role !== 'ADMIN')
         throw new UnauthorizedException('Unauthorized User');
 
       try {
@@ -44,7 +43,7 @@ export class MultiusersService {
   async findAll(username: string): Promise<Response<User[] | any>> {
     try {
       const user = await this.usersService.findOneByUsername(username);
-      if (user.data.role !== 'admin')
+      if (user.data.role !== 'ADMIN')
         throw new UnauthorizedException('Unauthorized User');
 
       try {
@@ -68,7 +67,7 @@ export class MultiusersService {
   async findOne(id: string, username: string): Promise<Response<User>> {
     try {
       const user = await this.usersService.findOneByUsername(username);
-      if (user.data.role !== 'admin')
+      if (user.data.role !== 'ADMIN')
         throw new UnauthorizedException('Unauthorized User');
 
       try {
@@ -110,7 +109,7 @@ export class MultiusersService {
   ): Promise<Response<User>> {
     try {
       const user = await this.usersService.findOneByUsername(username);
-      if (user.data.role !== 'admin')
+      if (user.data.role !== 'ADMIN')
         throw new UnauthorizedException('Unauthorized User');
 
       try {
@@ -132,7 +131,7 @@ export class MultiusersService {
   async remove(id: string, username: string): Promise<Response<User>> {
     try {
       const user = await this.usersService.findOneByUsername(username);
-      if (user.data.role !== 'admin')
+      if (user.data.role !== 'ADMIN')
         throw new UnauthorizedException('Unauthorized User');
 
       try {
