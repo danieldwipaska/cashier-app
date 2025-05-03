@@ -2,7 +2,6 @@ import { Module } from '@nestjs/common';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
 import { FnbsModule } from './fnbs/fnbs.module';
-import { MongooseModule } from '@nestjs/mongoose';
 import { CategoriesModule } from './categories/categories.module';
 import { ReportsModule } from './reports/reports.module';
 import { AuthModule } from './auth/auth.module';
@@ -13,6 +12,7 @@ import { CrewsModule } from './crews/crews.module';
 import { ShopsModule } from './shops/shops.module';
 import { MultiusersModule } from './multiusers/multiusers.module';
 import { MethodsModule } from './methods/methods.module';
+import { BackofficeSettingsModule } from './backoffice-settings/backoffice-settings.module';
 
 @Module({
   imports: [
@@ -27,6 +27,7 @@ import { MethodsModule } from './methods/methods.module';
     ShopsModule,
     MultiusersModule,
     MethodsModule,
+    BackofficeSettingsModule,
   ],
   controllers: [AppController],
   providers: [AppService],

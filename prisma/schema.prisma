@@ -14,36 +14,36 @@ datasource db {
 }
 
 model User {
-  id         String   @id @default(uuid()) // @default(autoincrement())
-  username   String   @unique
+  id         String         @id @default(uuid()) // @default(autoincrement())
+  username   String         @unique
   password   String
-  role       Role     @default(ADMIN)
-  created_at DateTime @default(now())
-  updated_at DateTime @default(now()) @updatedAt
+  role       Role           @default(ADMIN)
+  created_at DateTime       @default(now())
+  updated_at DateTime       @default(now()) @updatedAt
   shops      UsersOnShops[]
 }
 
 model Shop {
-  id                   String   @id @default(uuid()) // @default(autoincrement())
-  code                 String   @unique
+  id                   String         @id @default(uuid()) // @default(autoincrement())
+  code                 String         @unique
   name                 String
-  discount_status      Boolean  @default(false)
-  discount             Int      @default(0)
-  discount_unit        String   @default("percent")
-  tax                  Int      @default(0)
-  service              Int      @default(0)
-  included_tax_service Boolean  @default(true)
-  created_at           DateTime @default(now())
-  updated_at           DateTime @default(now()) @updatedAt
+  discount_status      Boolean        @default(false)
+  discount             Int            @default(0)
+  discount_unit        String         @default("percent")
+  tax                  Int            @default(0)
+  service              Int            @default(0)
+  included_tax_service Boolean        @default(true)
+  created_at           DateTime       @default(now())
+  updated_at           DateTime       @default(now()) @updatedAt
   users                UsersOnShops[]
   Crew                 Crew[]
 }
 
 model UsersOnShops {
-  shop       Shop     @relation(fields: [shopId], references: [id])
-  shopId     String
-  user       User     @relation(fields: [userId], references: [id])
-  userId     String
+  shop   Shop   @relation(fields: [shopId], references: [id])
+  shopId String
+  user   User   @relation(fields: [userId], references: [id])
+  userId String
 
   @@id([shopId, userId])
 }
@@ -53,7 +53,9 @@ model Category {
   name       String   @unique
   created_at DateTime @default(now())
   updated_at DateTime @default(now()) @updatedAt
-  Fnbs Fnbs[]
+  Fnbs       Fnbs[]
+
+  BackofficeSettings BackofficeSettings[]
 }
 
 model Fnbs {
@@ -70,39 +72,39 @@ model Fnbs {
 }
 
 model Report {
-  id                              String    @id @default(uuid())
-  report_id                       String    @default("")
+  id                              String       @id @default(uuid())
+  report_id                       String       @default("")
   type                            ReportType
   status                          ReportStatus
   customer_name                   String
-  customer_id                     String    @default("")
-  card_number                     String    @default("")
+  customer_id                     String       @default("")
+  card_number                     String       @default("")
   served_by                       String
-  crew_id                         String    @default("")
-  collected_by                    String    @default("Greeter")
-  initial_balance                 Int       @default(0)
-  final_balance                   Int       @default(0)
+  crew_id                         String       @default("")
+  collected_by                    String       @default("Greeter")
+  initial_balance                 Int          @default(0)
+  final_balance                   Int          @default(0)
   total_payment                   Float
-  included_tax_service            Boolean   @default(false)
-  total_payment_after_tax_service Float     @default(0)
-  tax_percent                     Float     @default(0)
-  service_percent                 Float     @default(0)
-  total_tax                       Float     @default(0)
-  payment_method                  String    @default("")
-  note                            String    @default("")
-  order_id                        String[]  @default([])
-  order_name                      String[]  @default([])
-  order_category                  String[]  @default([])
-  order_amount                    Int[]     @default([])
-  refunded_order_amount           Int[]     @default([])
-  order_price                     Float[]   @default([])
-  order_discount_status           Boolean[] @default([])
-  order_discount_percent          Float[]   @default([])
-  deleted_status                  Boolean   @default(false)
-  refund_status                   Boolean   @default(false)
-  refund_target_id                String    @default("")
-  created_at                      DateTime  @default(now())
-  updated_at                      DateTime  @default(now()) @updatedAt
+  included_tax_service            Boolean      @default(false)
+  total_payment_after_tax_service Float        @default(0)
+  tax_percent                     Float        @default(0)
+  service_percent                 Float        @default(0)
+  total_tax                       Float        @default(0)
+  payment_method                  String       @default("")
+  note                            String       @default("")
+  order_id                        String[]     @default([])
+  order_name                      String[]     @default([])
+  order_category                  String[]     @default([])
+  order_amount                    Int[]        @default([])
+  refunded_order_amount           Int[]        @default([])
+  order_price                     Float[]      @default([])
+  order_discount_status           Boolean[]    @default([])
+  order_discount_percent          Float[]      @default([])
+  deleted_status                  Boolean      @default(false)
+  refund_status                   Boolean      @default(false)
+  refund_target_id                String       @default("")
+  created_at                      DateTime     @default(now())
+  updated_at                      DateTime     @default(now()) @updatedAt
 }
 
 model Card {
@@ -118,12 +120,20 @@ model Card {
 }
 
 model Crew {
-  id         String   @id @default(uuid())
-  name       String   @unique
-  code       String   @unique
-  position   String
-  shop       Shop     @relation(fields: [shopId], references: [id])
-  shopId     String
+  id            String       @id @default(uuid())
+  name          String       @unique
+  code          String       @unique
+  position      String
+  shop          Shop         @relation(fields: [shopId], references: [id])
+  shopId        String
+  created_at    DateTime     @default(now())
+  updated_at    DateTime     @default(now()) @updatedAt
+}
+
+model BackofficeSettings {
+  id                  String     @id @default(uuid())
+  purchase_categories Category[]
+
   created_at DateTime @default(now())
   updated_at DateTime @default(now()) @updatedAt
 }
