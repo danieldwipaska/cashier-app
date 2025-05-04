@@ -17,13 +17,14 @@ import { CardsService } from './cards.service';
 import { Prisma } from '@prisma/client';
 import { AuthGuard, CrewGuard } from 'src/auth/auth.guard';
 import { CreateReportWithCardDto } from 'src/reports/dto/create-report.dto';
+import { ValidationPipe } from 'src/validation.pipe';
 
 @Controller('cards')
 export class CardsController {
   constructor(private readonly cardsService: CardsService) {}
 
   @Post()
-  create(@Body() data: Prisma.CardCreateInput) {
+  create(@Body(new ValidationPipe()) data: Prisma.CardCreateInput) {
     return this.cardsService.create(data);
   }
 

@@ -5,7 +5,6 @@ import {
 } from '@nestjs/common';
 import Response from 'src/interfaces/response.interface';
 
-import { v4 } from 'uuid';
 import { PrismaService } from 'src/prisma.service';
 import { Category, Prisma } from '@prisma/client';
 
@@ -44,7 +43,7 @@ export class CategoriesService {
     try {
       const categories = await this.prisma.category.findMany({
         include: {
-          Fnbs: true,
+          fnbs: true,
         },
       });
 

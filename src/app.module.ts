@@ -13,6 +13,8 @@ import { ShopsModule } from './shops/shops.module';
 import { MultiusersModule } from './multiusers/multiusers.module';
 import { MethodsModule } from './methods/methods.module';
 import { BackofficeSettingsModule } from './backoffice-settings/backoffice-settings.module';
+import { CrewPurchaseCategoryModule } from './crew-purchase-category/crew-purchase-category.module';
+import { UserOnShopsModule } from './user-on-shops/user-on-shops.module';
 
 @Module({
   imports: [
@@ -28,6 +30,8 @@ import { BackofficeSettingsModule } from './backoffice-settings/backoffice-setti
     MultiusersModule,
     MethodsModule,
     BackofficeSettingsModule,
+    CrewPurchaseCategoryModule,
+    UserOnShopsModule,
   ],
   controllers: [AppController],
   providers: [AppService],

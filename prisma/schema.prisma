@@ -24,28 +24,29 @@ model User {
 }
 
 model Shop {
-  id                   String         @id @default(uuid()) // @default(autoincrement())
-  code                 String         @unique
+  id                   String             @id @default(uuid()) // @default(autoincrement())
+  code                 String             @unique
   name                 String
-  discount_status      Boolean        @default(false)
-  discount             Int            @default(0)
-  discount_unit        String         @default("percent")
-  tax                  Int            @default(0)
-  service              Int            @default(0)
-  included_tax_service Boolean        @default(true)
-  created_at           DateTime       @default(now())
-  updated_at           DateTime       @default(now()) @updatedAt
+  discount_status      Boolean            @default(false)
+  discount             Int                @default(0)
+  discount_unit        String             @default("percent")
+  tax                  Int                @default(0)
+  service              Int                @default(0)
+  included_tax_service Boolean            @default(true)
+  created_at           DateTime           @default(now())
+  updated_at           DateTime           @default(now()) @updatedAt
   users                UsersOnShops[]
-  Crew                 Crew[]
+  crews                Crew[]
+  BackofficeSetting    BackofficeSetting?
 }
 
 model UsersOnShops {
-  shop   Shop   @relation(fields: [shopId], references: [id])
-  shopId String
-  user   User   @relation(fields: [userId], references: [id])
-  userId String
+  shop    Shop   @relation(fields: [shop_id], references: [id])
+  shop_id String
+  user    User   @relation(fields: [user_id], references: [id])
+  user_id String
 
-  @@id([shopId, userId])
+  @@id([shop_id, user_id])
 }
 
 model Category {
@@ -53,9 +54,18 @@ model Category {
   name       String   @unique
   created_at DateTime @default(now())
   updated_at DateTime @default(now()) @updatedAt
-  Fnbs       Fnbs[]
+  fnbs       Fnbs[]
 
-  BackofficeSettings BackofficeSettings[]
+  crew_purchase_category CrewPurchaseCategory[]
+}
+
+model CrewPurchaseCategory {
+  backoffice_setting    BackofficeSetting @relation(fields: [backoffice_setting_id], references: [id])
+  backoffice_setting_id String
+  category              Category          @relation(fields: [category_id], references: [id])
+  category_id           String
+
+  @@id([backoffice_setting_id, category_id])
 }
 
 model Fnbs {
@@ -67,8 +77,8 @@ model Fnbs {
   discount_percent Int      @default(0)
   created_at       DateTime @default(now())
   updated_at       DateTime @default(now()) @updatedAt
-  category         Category @relation(fields: [categoryId], references: [id])
-  categoryId       String
+  category         Category @relation(fields: [category_id], references: [id])
+  category_id      String
 }
 
 model Report {
@@ -120,22 +130,25 @@ model Card {
 }
 
 model Crew {
-  id            String       @id @default(uuid())
-  name          String       @unique
-  code          String       @unique
-  position      String
-  shop          Shop         @relation(fields: [shopId], references: [id])
-  shopId        String
-  created_at    DateTime     @default(now())
-  updated_at    DateTime     @default(now()) @updatedAt
+  id         String   @id @default(uuid())
+  name       String   @unique
+  code       String   @unique
+  position   String
+  shop       Shop     @relation(fields: [shop_id], references: [id])
+  shop_id    String
+  created_at DateTime @default(now())
+  updated_at DateTime @default(now()) @updatedAt
 }
 
-model BackofficeSettings {
-  id                  String     @id @default(uuid())
-  purchase_categories Category[]
+model BackofficeSetting {
+  id      String @id @default(uuid())
+  shop    Shop   @relation(fields: [shop_id], references: [id])
+  shop_id String @unique
 
   created_at DateTime @default(now())
   updated_at DateTime @default(now()) @updatedAt
+
+  CrewPurchaseCategory CrewPurchaseCategory[]
 }
 
 model Method {

@@ -1,15 +1,7 @@
-import {
-  Controller,
-  Get,
-  Post,
-  Body,
-  Patch,
-  Param,
-  Delete,
-} from '@nestjs/common';
+import { Body, Controller, Get, Param, Post } from '@nestjs/common';
 import { BackofficeSettingsService } from './backoffice-settings.service';
 import { CreateBackofficeSettingDto } from './dto/create-backoffice-setting.dto';
-import { UpdateBackofficeSettingDto } from './dto/update-backoffice-setting.dto';
+import { ValidationPipe } from 'src/validation.pipe';
 
 @Controller('backoffice-settings')
 export class BackofficeSettingsController {
@@ -18,28 +10,15 @@ export class BackofficeSettingsController {
   ) {}
 
   @Post()
-  create(@Body() createBackofficeSettingDto: CreateBackofficeSettingDto) {
+  create(
+    @Body(new ValidationPipe())
+    createBackofficeSettingDto: CreateBackofficeSettingDto,
+  ) {
     return this.backofficeSettingsService.create(createBackofficeSettingDto);
   }
 
-  @Get()
-  findAll() {
-    return this.backofficeSettingsService.findAll();
-  }
-
-  @Patch(':id')
-  update(
-    @Param('id') id: string,
-    @Body() updateBackofficeSettingDto: UpdateBackofficeSettingDto,
-  ) {
-    return this.backofficeSettingsService.update(
-      id,
-      updateBackofficeSettingDto,
-    );
-  }
-
-  @Delete(':id')
-  remove(@Param('id') id: string) {
-    return this.backofficeSettingsService.remove(id);
+  @Get(':id')
+  findOne(@Param('id') id: string) {
+    return this.backofficeSettingsService.findOne(id);
   }
 }

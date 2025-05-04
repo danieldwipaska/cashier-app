@@ -42,55 +42,21 @@ export class UsersService {
     }
   }
 
-  async findAll(user?: any): Promise<Response<User[]>> {
-    const shopId = user.shops[0].shop;
-    if (shopId) {
-      try {
-        const allUsers = await this.prisma.user.findMany({
-          where: {
-            shops: {
-              some: {
-                shop: shopId,
-              },
-            },
-          },
-          include: {
-            shops: {
-              include: { shop: true },
-            },
-          },
-        });
-        if (!allUsers.length) throw new NotFoundException('User Not Found');
+  async findAll(): Promise<Response<User[]>> {
+    try {
+      const users = await this.prisma.user.findMany();
+      if (!users.length) throw new NotFoundException('User Not Found');
 
-        const users = allUsers.filter((user) => user.role !== 'ADMIN');
+      users.forEach((user) => delete user.password);
 
-        users.forEach((user) => delete user.password);
-
-        return {
-          statusCode: 201,
-          message: 'CREATED',
-          data: users,
-        };
-      } catch (error) {
-        console.log(error);
-        throw error;
-      }
-    } else {
-      try {
-        const users = await this.prisma.user.findMany();
-        if (!users.length) throw new NotFoundException('User Not Found');
-
-        users.forEach((user) => delete user.password);
-
-        return {
-          statusCode: 201,
-          message: 'CREATED',
-          data: users,
-        };
-      } catch (error) {
-        console.log(error);
-        throw error;
-      }
+      return {
+        statusCode: 200,
+        message: 'OK',
+        data: users,
+      };
+    } catch (error) {
+      console.log(error);
+      throw error;
     }
   }
 
