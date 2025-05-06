@@ -56,6 +56,21 @@ export class ShopsService {
     }
   }
 
+  async findOneByCode(code: string): Promise<Response<Shop>> {
+    try {
+      const shop = await this.prisma.shop.findUnique({ where: { code } });
+      if (!shop) throw new NotFoundException('Shop Not Found');
+
+      return {
+        statusCode: 200,
+        message: 'OK',
+        data: shop,
+      };
+    } catch (error) {
+      throw error;
+    }
+  }
+
   async update(
     id: string,
     data: Prisma.ShopUpdateInput,

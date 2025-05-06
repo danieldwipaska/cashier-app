@@ -97,6 +97,8 @@ export class UsersService {
         },
       });
 
+      if (!user) throw new NotFoundException('User Not Found');
+
       return {
         statusCode: 200,
         message: 'OK',

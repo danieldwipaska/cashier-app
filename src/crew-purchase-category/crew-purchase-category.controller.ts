@@ -30,7 +30,13 @@ export class CrewPurchaseCategoryController {
   }
 
   @Delete('')
-  remove(@Body('backoffice_setting_id') backoffice_setting_id: string) {
-    return this.crewPurchaseCategoryService.remove(backoffice_setting_id);
+  remove(
+    @Body('backoffice_setting_id') backoffice_setting_id: string,
+    @Body('category_id') category_id: string,
+  ) {
+    return this.crewPurchaseCategoryService.remove(
+      backoffice_setting_id,
+      category_id,
+    );
   }
 }

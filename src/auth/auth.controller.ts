@@ -11,8 +11,9 @@ export class AuthController {
   login(
     @Body('username') username: string,
     @Body('password') password: string,
+    @Body('shop_code') shop_code: string,
   ) {
-    return this.authService.validateUser(username, password);
+    return this.authService.validateUser(username, password, shop_code);
   }
 
   @Post('/signup')

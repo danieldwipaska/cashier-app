@@ -6,6 +6,7 @@ import { UsersModule } from 'src/users/users.module';
 import { JwtModule } from '@nestjs/jwt';
 import { PrismaModule } from 'src/prisma.module';
 import { CrewsModule } from 'src/crews/crews.module';
+import { ShopsModule } from 'src/shops/shops.module';
 
 @Module({
   imports: [
@@ -17,6 +18,7 @@ import { CrewsModule } from 'src/crews/crews.module';
     }),
     PrismaModule,
     CrewsModule,
+    ShopsModule,
   ],
   exports: [AuthService],
   controllers: [AuthController],
