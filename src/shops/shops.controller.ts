@@ -7,10 +7,11 @@ import {
   Param,
   Delete,
   UseGuards,
+  Req,
 } from '@nestjs/common';
 import { ShopsService } from './shops.service';
 import { Prisma } from '@prisma/client';
-import { AuthGuard } from 'src/auth/auth.guard';
+import { AuthGuard, ShopGuard } from 'src/auth/auth.guard';
 
 @Controller('shops')
 export class ShopsController {
@@ -27,16 +28,16 @@ export class ShopsController {
     return this.shopsService.findAll();
   }
 
+  @UseGuards(AuthGuard, ShopGuard)
+  @Get('shop')
+  findOneByCode(@Req() request: any) {
+    return this.shopsService.findOneByCode(request.shop.code);
+  }
+
   @UseGuards(AuthGuard)
   @Get(':id')
   findOne(@Param('id') id: string) {
     return this.shopsService.findOne(id);
-  }
-
-  @UseGuards(AuthGuard)
-  @Get('shop/:code')
-  findOneByCode(@Param('code') code: string) {
-    return this.shopsService.findOneByCode(code);
   }
 
   @UseGuards(AuthGuard)

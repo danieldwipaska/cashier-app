@@ -22,5 +22,5 @@ export class CreateCrewDto {
   @IsString()
   @IsNotEmpty()
   @IsEnum(Position)
-  position: string;
+  position: Position;
 }
