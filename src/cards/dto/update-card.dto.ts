@@ -1,3 +1,4 @@
-import { Prisma } from '@prisma/client';
+import { PartialType } from '@nestjs/mapped-types';
+import { CreateCardDto } from './create-card.dto';
 
-export class UpdateCardDto implements Prisma.CardUpdateInput {}
+export class UpdateCardDto extends PartialType(CreateCardDto) {}

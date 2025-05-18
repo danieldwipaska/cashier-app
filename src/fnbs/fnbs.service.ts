@@ -4,15 +4,19 @@ import { PrismaService } from 'src/prisma.service';
 import { Fnbs, Prisma } from '@prisma/client';
 import { PageMetaData } from 'src/interfaces/pagination.interface';
 import { countSkip, paginate } from 'src/utils/pagination.util';
+import { CreateFnbDto } from './dto/create-fnb.dto';
 
 @Injectable()
 export class FnbsService {
   constructor(private prisma: PrismaService) {}
 
-  async create(data: Prisma.FnbsCreateInput): Promise<Response<Fnbs>> {
+  async create(request: any, data: CreateFnbDto): Promise<Response<Fnbs>> {
     try {
-      const fnb = await this.prisma.fnbs.create({
-        data,
+      const newFnb = await this.prisma.fnbs.create({
+        data: {
+          ...data,
+          shop_id: request.shop.id,
+        },
         include: {
           category: true,
         },
@@ -21,7 +25,7 @@ export class FnbsService {
       return {
         statusCode: 201,
         message: 'OK',
-        data: fnb,
+        data: newFnb,
       };
     } catch (error) {
       console.log(error);
@@ -30,6 +34,7 @@ export class FnbsService {
   }
 
   async findAll(
+    request: any,
     page?: number,
     pagination?: boolean,
   ): Promise<Response<Fnbs[]>> {
@@ -48,6 +53,9 @@ export class FnbsService {
       // eslint-disable-next-line prefer-const
       const [fnbs, totalFnbs] = await Promise.all([
         this.prisma.fnbs.findMany({
+          where: {
+            shop_id: request.shop.id,
+          },
           orderBy: {
             name: 'asc',
           },
@@ -73,10 +81,13 @@ export class FnbsService {
     }
   }
 
-  async findOne(id: string): Promise<Response<Fnbs>> {
+  async findOne(request: any, id: string): Promise<Response<Fnbs>> {
     try {
       const fnb = await this.prisma.fnbs.findUnique({
-        where: { id },
+        where: {
+          id,
+          shop_id: request.shop.id,
+        },
         include: { category: true },
       });
       if (!fnb) throw new NotFoundException(`Fnb not found`);
@@ -93,12 +104,16 @@ export class FnbsService {
   }
 
   async update(
+    request: any,
     id: string,
     data: Prisma.FnbsUpdateInput,
   ): Promise<Response<Fnbs>> {
     try {
       const fnb = await this.prisma.fnbs.update({
-        where: { id },
+        where: {
+          id,
+          shop_id: request.shop.id,
+        },
         include: { category: true },
         data,
       });
@@ -115,10 +130,13 @@ export class FnbsService {
     }
   }
 
-  async remove(id: string): Promise<Response<Fnbs>> {
+  async remove(request: any, id: string): Promise<Response<Fnbs>> {
     try {
       const fnb = await this.prisma.fnbs.findUnique({
-        where: { id },
+        where: {
+          id,
+          shop_id: request.shop.id,
+        },
       });
       if (!fnb) throw new NotFoundException('Fnb Not Found');
 

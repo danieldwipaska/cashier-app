@@ -6,36 +6,49 @@ import {
   Patch,
   Param,
   Delete,
+  UseGuards,
+  Req,
 } from '@nestjs/common';
 import { MethodsService } from './methods.service';
-import { Prisma } from '@prisma/client';
+import { AuthGuard, ShopGuard } from 'src/auth/auth.guard';
+import { CreateMethodDto } from './dto/create-method.dto';
+import { UpdateMethodDto } from './dto/update-method.dto';
 
 @Controller('methods')
 export class MethodsController {
   constructor(private readonly methodsService: MethodsService) {}
 
+  @UseGuards(AuthGuard, ShopGuard)
   @Post()
-  create(@Body() data: Prisma.MethodCreateInput) {
-    return this.methodsService.create(data);
+  create(@Req() request: Request, @Body() createMethodDto: CreateMethodDto) {
+    return this.methodsService.create(request, createMethodDto);
   }
 
+  @UseGuards(AuthGuard, ShopGuard)
   @Get()
-  findAll() {
-    return this.methodsService.findAll();
+  findAll(@Req() request: Request) {
+    return this.methodsService.findAll(request);
   }
 
+  @UseGuards(AuthGuard, ShopGuard)
   @Get(':id')
-  findOne(@Param('id') id: string) {
-    return this.methodsService.findOne(id);
+  findOne(@Req() request: Request, @Param('id') id: string) {
+    return this.methodsService.findOne(request, id);
   }
 
+  @UseGuards(AuthGuard, ShopGuard)
   @Patch(':id')
-  update(@Param('id') id: string, @Body() data: Prisma.MethodUpdateInput) {
-    return this.methodsService.update(id, data);
+  update(
+    @Req() request: Request,
+    @Param('id') id: string,
+    @Body() updateMethodDto: UpdateMethodDto,
+  ) {
+    return this.methodsService.update(request, id, updateMethodDto);
   }
 
+  @UseGuards(AuthGuard, ShopGuard)
   @Delete(':id')
-  remove(@Param('id') id: string) {
-    return this.methodsService.remove(id);
+  remove(@Req() request: Request, @Param('id') id: string) {
+    return this.methodsService.remove(request, id);
   }
 }

@@ -1,6 +1,6 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import Response from 'src/interfaces/response.interface';
-import { Prisma, Report } from '@prisma/client';
+import { Report } from '@prisma/client';
 import { PrismaService } from 'src/prisma.service';
 import { CrewsService } from 'src/crews/crews.service';
 import Randomize from 'src/utils/randomize.util';
@@ -17,8 +17,8 @@ export class ReportsService {
   ) {}
 
   async create(
-    data: CreateReportDto,
-    username: string,
+    createReportDto: CreateReportDto,
+    req: any,
   ): Promise<Response<Report>> {
     const {
       type,
@@ -29,9 +29,9 @@ export class ReportsService {
       order_amount,
       crew_id,
       note,
-    } = data;
+    } = createReportDto;
 
-    const newReportData: Prisma.ReportCreateInput = {
+    const newReportData: any = {
       report_id: Randomize.generateReportId('PAY', 6),
       type,
       status: status || ReportStatus.PAID,
@@ -43,10 +43,11 @@ export class ReportsService {
       note: note || '',
       total_payment: 0,
       served_by: '',
+      shop_id: req.shop.id,
     };
 
     try {
-      const crew = await this.crewsService.findOne(crew_id);
+      const crew = await this.crewsService.findOne(req, crew_id);
       if (!crew) throw new NotFoundException('Crew Not Found');
 
       newReportData.served_by = crew.data.name;
@@ -102,28 +103,18 @@ export class ReportsService {
     newReportData.total_payment = totalPayment;
 
     // CALCULATE TAX AND SERVICE
-    const user = await this.prisma.user.findUnique({
-      where: { username },
-      include: {
-        shops: {
-          include: {
-            shop: true,
-          },
-        },
+    const shop = await this.prisma.shop.findUnique({
+      where: {
+        id: req.shop.id,
       },
     });
-    if (!user) throw new NotFoundException('User Not Found');
+    if (!shop) throw new NotFoundException('Shop Not Found');
 
-    newReportData.included_tax_service =
-      user.shops[0].shop.included_tax_service;
+    newReportData.included_tax_service = shop.included_tax_service;
 
-    const taxService = new ServiceTax(
-      totalPayment,
-      user.shops[0].shop.service,
-      user.shops[0].shop.tax,
-    );
+    const taxService = new ServiceTax(totalPayment, shop.service, shop.tax);
 
-    if (!user.shops[0].shop.included_tax_service) {
+    if (!shop.included_tax_service) {
       newReportData.total_payment_after_tax_service = taxService.calculateTax();
     } else {
       newReportData.total_payment_after_tax_service = taxService.totalPayment;
@@ -150,6 +141,7 @@ export class ReportsService {
   }
 
   async findAll(
+    request: any,
     from: string,
     to: string,
     filter: {
@@ -158,6 +150,7 @@ export class ReportsService {
       customer_id: string;
       served_by: string;
       type: ReportType | any;
+      shop_id: string;
     },
     page?: number,
     pagination?: boolean,
@@ -176,6 +169,8 @@ export class ReportsService {
         in: filter.type,
       };
     }
+
+    filter.shop_id = request.shop.id;
 
     try {
       // eslint-disable-next-line prefer-const
@@ -232,10 +227,13 @@ export class ReportsService {
     }
   }
 
-  async findOne(id: string): Promise<Response<Report>> {
+  async findOne(request: any, id: string): Promise<Response<Report>> {
     try {
       const report = await this.prisma.report.findUnique({
-        where: { id },
+        where: {
+          id,
+          shop_id: request.shop.id,
+        },
       });
       if (!report) throw new NotFoundException('Report Not Found');
 
@@ -251,12 +249,14 @@ export class ReportsService {
   }
 
   async findAllByCardNumberAndCustomerId(
+    request: any,
     cardNumber: string,
     customerId: string,
   ): Promise<Response<Report[]>> {
     try {
       const reports = await this.prisma.report.findMany({
         where: {
+          shop_id: request.shop.id,
           AND: [{ card_number: cardNumber }, { customer_id: customerId }],
         },
         orderBy: { created_at: 'desc' },
@@ -274,8 +274,8 @@ export class ReportsService {
 
   async update(
     id: string,
-    data: UpdateReportDto,
-    username: string,
+    updateReportDto: UpdateReportDto,
+    req: any,
   ): Promise<Response<Report>> {
     const {
       status,
@@ -285,9 +285,9 @@ export class ReportsService {
       order_amount,
       crew_id,
       note,
-    } = data;
+    } = updateReportDto;
 
-    const reportData: Prisma.ReportUpdateInput = {
+    const reportData: any = {
       status: status || ReportStatus.PAID,
       customer_name,
       crew_id,
@@ -300,7 +300,7 @@ export class ReportsService {
     };
 
     try {
-      const crew = await this.crewsService.findOne(crew_id);
+      const crew = await this.crewsService.findOne(req, crew_id);
       if (!crew) throw new NotFoundException('Crew Not Found');
 
       reportData.served_by = crew.data.name;
@@ -320,7 +320,10 @@ export class ReportsService {
     try {
       for (const id of order_id) {
         const fnb = await this.prisma.fnbs.findUnique({
-          where: { id },
+          where: {
+            id,
+            shop_id: req.shop.id,
+          },
           include: { category: true },
         });
         if (!fnb) throw new NotFoundException('Food And Beverage Not Found');
@@ -356,27 +359,18 @@ export class ReportsService {
     reportData.total_payment = totalPayment;
 
     // CALCULATE TAX AND SERVICE
-    const user = await this.prisma.user.findUnique({
-      where: { username },
-      include: {
-        shops: {
-          include: {
-            shop: true,
-          },
-        },
+    const shop = await this.prisma.shop.findUnique({
+      where: {
+        id: req.shop.id,
       },
     });
-    if (!user) throw new NotFoundException('User Not Found');
+    if (!shop) throw new NotFoundException('User Not Found');
 
-    reportData.included_tax_service = user.shops[0].shop.included_tax_service;
+    reportData.included_tax_service = shop.included_tax_service;
 
-    const taxService = new ServiceTax(
-      totalPayment,
-      user.shops[0].shop.service,
-      user.shops[0].shop.tax,
-    );
+    const taxService = new ServiceTax(totalPayment, shop.service, shop.tax);
 
-    if (!user.shops[0].shop.included_tax_service) {
+    if (!shop.included_tax_service) {
       reportData.total_payment_after_tax_service = taxService.calculateTax();
     } else {
       reportData.total_payment_after_tax_service = taxService.totalPayment;
@@ -388,7 +382,10 @@ export class ReportsService {
 
     try {
       const report = await this.prisma.report.update({
-        where: { id },
+        where: {
+          id,
+          shop_id: req.shop.id,
+        },
         data: reportData,
       });
 
@@ -403,9 +400,18 @@ export class ReportsService {
     }
   }
 
-  async refundPartially(id: string, data: any): Promise<Response<Report>> {
+  async refundPartially(
+    request: any,
+    id: string,
+    data: any,
+  ): Promise<Response<Report>> {
     try {
-      const report = await this.prisma.report.findUnique({ where: { id } });
+      const report = await this.prisma.report.findUnique({
+        where: {
+          id,
+          shop_id: request.shop.id,
+        },
+      });
       if (!report) throw new NotFoundException('Report Not Found');
 
       // Refund Data
@@ -447,7 +453,10 @@ export class ReportsService {
         try {
           await this.prisma.$transaction([
             this.prisma.report.update({
-              where: { id },
+              where: {
+                id,
+                shop_id: request.shop.id,
+              },
               data: {
                 ...report,
                 refund_status: true,
@@ -468,10 +477,14 @@ export class ReportsService {
                 total_tax,
                 total_payment_after_tax_service:
                   -total_payment_after_tax_service,
+                shop_id: request.shop.id,
               },
             }),
             this.prisma.card.update({
-              where: { card_number: report.card_number },
+              where: {
+                card_number: report.card_number,
+                shop_id: request.shop.id,
+              },
               data: {
                 balance: {
                   increment: total_payment_after_tax_service,
@@ -519,12 +532,13 @@ export class ReportsService {
     }
   }
 
-  async cancelOpenBill(id: string): Promise<Response<Report>> {
+  async cancelOpenBill(request: any, id: string): Promise<Response<Report>> {
     try {
       const report = await this.prisma.report.update({
         where: {
           id,
           status: ReportStatus.UNPAID,
+          shop_id: request.shop.id,
         },
         data: {
           status: ReportStatus.CANCELLED,
@@ -542,14 +556,22 @@ export class ReportsService {
     }
   }
 
-  async remove(id: string): Promise<Response<Report>> {
+  async remove(request: any, id: string): Promise<Response<Report>> {
     try {
-      const report = await this.prisma.report.findUnique({ where: { id } });
+      const report = await this.prisma.report.findUnique({
+        where: {
+          id,
+          shop_id: request.shop.id,
+        },
+      });
       if (!report) throw new NotFoundException('Report Not Found');
 
       try {
         await this.prisma.report.delete({
-          where: { id },
+          where: {
+            id,
+            shop_id: request.shop.id,
+          },
         });
 
         return {

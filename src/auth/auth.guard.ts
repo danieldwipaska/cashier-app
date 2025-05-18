@@ -8,6 +8,7 @@ import { JwtService } from '@nestjs/jwt';
 
 import { Request } from 'express';
 import { CrewsService } from 'src/crews/crews.service';
+import { ShopsService } from 'src/shops/shops.service';
 
 @Injectable()
 export class AuthGuard implements CanActivate {
@@ -46,7 +47,10 @@ export class CrewGuard implements CanActivate {
     const request = context.switchToHttp().getRequest();
 
     try {
-      const crew = await this.crewsService.findOneByCode(request.body.crewCode);
+      const crew = await this.crewsService.findOneByCode(
+        request,
+        request.body.crewCode,
+      );
 
       if (!crew) {
         throw new UnauthorizedException();
@@ -55,6 +59,27 @@ export class CrewGuard implements CanActivate {
       request['crewName'] = crew.data.name;
     } catch {
       throw new UnauthorizedException();
+    }
+
+    return true;
+  }
+}
+
+@Injectable()
+export class ShopGuard implements CanActivate {
+  constructor(private shopsService: ShopsService) {}
+
+  async canActivate(context: ExecutionContext) {
+    const request = context.switchToHttp().getRequest();
+    const shopCode = request.user?.shop_code;
+
+    if (shopCode) {
+      try {
+        const shop = await this.shopsService.findOneByCode(shopCode);
+        request['shop'] = shop.data;
+      } catch (error) {
+        throw error;
+      }
     }
 
     return true;

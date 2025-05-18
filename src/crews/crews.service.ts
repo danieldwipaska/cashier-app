@@ -1,8 +1,9 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
-import { Crew, Prisma } from '@prisma/client';
+import { Crew } from '@prisma/client';
 import Response from 'src/interfaces/response.interface';
 import { PrismaService } from 'src/prisma.service';
 import { UsersService } from 'src/users/users.service';
+import { UpdateCrewDto } from './dto/update-crew.dto';
 
 @Injectable()
 export class CrewsService {
@@ -10,7 +11,11 @@ export class CrewsService {
     private prisma: PrismaService,
     private usersService: UsersService,
   ) {}
-  async create(data: any, username: string): Promise<Response<Crew>> {
+  async create(
+    data: any,
+    username: string,
+    shop_id: string,
+  ): Promise<Response<Crew>> {
     try {
       const user = await this.usersService.findOneByUsername(username);
       if (user.statusCode === 404)
@@ -19,7 +24,7 @@ export class CrewsService {
       const crew = await this.prisma.crew.create({
         data: {
           ...data,
-          shop_id: user.data.shops[0].shop_id,
+          shop_id,
         },
       });
 
@@ -33,9 +38,13 @@ export class CrewsService {
     }
   }
 
-  async findAll(): Promise<Response<Crew[]>> {
+  async findAll(request: any): Promise<Response<Crew[]>> {
     try {
-      const crews = await this.prisma.crew.findMany();
+      const crews = await this.prisma.crew.findMany({
+        where: {
+          shop_id: request.shop.id,
+        },
+      });
       if (!crews.length) throw new NotFoundException('Crew Not Found');
 
       return {
@@ -48,9 +57,14 @@ export class CrewsService {
     }
   }
 
-  async findOne(id: string): Promise<Response<Crew>> {
+  async findOne(request: any, id: string): Promise<Response<Crew>> {
     try {
-      const crew = await this.prisma.crew.findUnique({ where: { id } });
+      const crew = await this.prisma.crew.findUnique({
+        where: {
+          id,
+          shop_id: request.shop.id,
+        },
+      });
       if (!crew) throw new NotFoundException('Crew Not Found');
 
       return {
@@ -63,9 +77,14 @@ export class CrewsService {
     }
   }
 
-  async findOneByCode(code: string): Promise<Response<Crew>> {
+  async findOneByCode(request: any, code: string): Promise<Response<Crew>> {
     try {
-      const crew = await this.prisma.crew.findUnique({ where: { code } });
+      const crew = await this.prisma.crew.findUnique({
+        where: {
+          code,
+          shop_id: request.shop.id,
+        },
+      });
       if (!crew) throw new NotFoundException('Crew Not Found');
 
       return {
@@ -79,8 +98,9 @@ export class CrewsService {
   }
 
   async update(
+    request: any,
     id: string,
-    data: Prisma.CrewUpdateInput,
+    updateCrewDto: UpdateCrewDto,
   ): Promise<Response<Crew>> {
     try {
       const crew = await this.prisma.crew.findUnique({ where: { id } });
@@ -88,8 +108,13 @@ export class CrewsService {
 
       try {
         const updatedCrew = await this.prisma.crew.update({
-          where: { id },
-          data,
+          where: {
+            id,
+            shop_id: request.shop.id,
+          },
+          data: {
+            ...updateCrewDto,
+          },
         });
 
         return {
@@ -105,13 +130,23 @@ export class CrewsService {
     }
   }
 
-  async remove(id: string): Promise<Response<Crew>> {
+  async remove(request: any, id: string): Promise<Response<Crew>> {
     try {
-      const crew = await this.prisma.crew.findUnique({ where: { id } });
+      const crew = await this.prisma.crew.findUnique({
+        where: {
+          id,
+          shop_id: request.shop.id,
+        },
+      });
       if (!crew) throw new NotFoundException('Crew Not Found');
 
       try {
-        const deletedCrew = await this.prisma.crew.delete({ where: { id } });
+        const deletedCrew = await this.prisma.crew.delete({
+          where: {
+            id,
+            shop_id: request.shop.id,
+          },
+        });
 
         return {
           statusCode: 200,

@@ -6,22 +6,30 @@ import {
 import Response from 'src/interfaces/response.interface';
 
 import { PrismaService } from 'src/prisma.service';
-import { Category, Prisma } from '@prisma/client';
+import { Category } from '@prisma/client';
+import { CreateCategoryDto } from './dto/create-category.dto';
+import { UpdateCategoryDto } from './dto/update-category.dto';
 
 @Injectable()
 export class CategoriesService {
   constructor(private prisma: PrismaService) {}
 
-  async create(data: Prisma.CategoryCreateInput): Promise<Response<Category>> {
+  async create(
+    request: any,
+    createCategoryDto: CreateCategoryDto,
+  ): Promise<Response<Category>> {
     try {
       const category = await this.prisma.category.findUnique({
-        where: { name: data.name },
+        where: { name: createCategoryDto.name },
       });
       if (category) throw new BadRequestException('Category Already Exists');
 
       try {
         const category = await this.prisma.category.create({
-          data,
+          data: {
+            ...createCategoryDto,
+            shop_id: request.shop.id,
+          },
         });
 
         return {
@@ -39,9 +47,12 @@ export class CategoriesService {
     }
   }
 
-  async findAll(): Promise<Response<Category[]>> {
+  async findAll(request: any): Promise<Response<Category[]>> {
     try {
       const categories = await this.prisma.category.findMany({
+        where: {
+          shop_id: request.shop.id,
+        },
         include: {
           fnbs: true,
         },
@@ -58,9 +69,14 @@ export class CategoriesService {
     }
   }
 
-  async findOne(id: string): Promise<Response<Category>> {
+  async findOne(request: any, id: string): Promise<Response<Category>> {
     try {
-      const category = await this.prisma.category.findUnique({ where: { id } });
+      const category = await this.prisma.category.findUnique({
+        where: {
+          id,
+          shop_id: request.shop.id,
+        },
+      });
       if (!category) throw new NotFoundException('Category Not Found');
 
       return {
@@ -75,13 +91,19 @@ export class CategoriesService {
   }
 
   async update(
+    request: any,
     id: string,
-    data: Prisma.CategoryUpdateInput,
+    updateCategoryDto: UpdateCategoryDto,
   ): Promise<Response<Category>> {
     try {
       const category = await this.prisma.category.update({
-        where: { id },
-        data,
+        where: {
+          id,
+          shop_id: request.shop.id,
+        },
+        data: {
+          ...updateCategoryDto,
+        },
       });
 
       return {
@@ -95,9 +117,14 @@ export class CategoriesService {
     }
   }
 
-  async remove(id: string): Promise<Response<Category>> {
+  async remove(request: any, id: string): Promise<Response<Category>> {
     try {
-      const category = await this.prisma.category.findUnique({ where: { id } });
+      const category = await this.prisma.category.findUnique({
+        where: {
+          id,
+          shop_id: request.shop.id,
+        },
+      });
       if (!category) throw new NotFoundException('Category Not Found');
 
       try {

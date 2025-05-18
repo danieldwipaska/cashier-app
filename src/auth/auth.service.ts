@@ -25,6 +25,8 @@ export class AuthService {
 
       if (!registerUser) throw new BadRequestException('Bad Request');
 
+      delete registerUser.data.password;
+
       return registerUser;
     } catch (error) {
       console.log(error);

@@ -3,7 +3,7 @@ import {
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
-import { Card, Prisma, Report } from '@prisma/client';
+import { Card, Report } from '@prisma/client';
 import { CrewsService } from 'src/crews/crews.service';
 import { ReportStatus, ReportType } from 'src/enums/report';
 import { PageMetaData } from 'src/interfaces/pagination.interface';
@@ -22,9 +22,17 @@ export class CardsService {
     private crewsService: CrewsService,
   ) {}
 
-  async create(data: CreateCardDto): Promise<Response<Card>> {
+  async create(
+    request: any,
+    createCardDto: CreateCardDto,
+  ): Promise<Response<Card>> {
     try {
-      const card = await this.prisma.card.create({ data });
+      const card = await this.prisma.card.create({
+        data: {
+          ...createCardDto,
+          shop_id: request.shop.id,
+        },
+      });
 
       return {
         statusCode: 201,
@@ -37,13 +45,16 @@ export class CardsService {
     }
   }
 
-  async findAll(page?: number): Promise<Response<Card[]>> {
+  async findAll(request: any, page?: number): Promise<Response<Card[]>> {
     const take = 15;
 
     try {
       const skip = countSkip(take, page);
       const [cards, totalCards] = await Promise.all([
         this.prisma.card.findMany({
+          where: {
+            shop_id: request.shop.id,
+          },
           orderBy: {
             updated_at: 'desc',
           },
@@ -68,10 +79,18 @@ export class CardsService {
     }
   }
 
-  async findOneByCardNumber(cardNumber: string): Promise<Response<Card>> {
+  async findOneByCardNumber(
+    request: any,
+    cardNumber: string,
+  ): Promise<Response<Card>> {
     try {
+      const params = {
+        card_number: cardNumber,
+        shop_id: request.shop.id,
+      };
+
       const card = await this.prisma.card.findUnique({
-        where: { card_number: cardNumber },
+        where: params,
       });
       if (!card) throw new NotFoundException('Card Not Found');
 
@@ -104,7 +123,10 @@ export class CardsService {
 
         const [, report] = await this.prisma.$transaction([
           this.prisma.card.update({
-            where: { id },
+            where: {
+              id,
+              shop_id: req.shop.id,
+            },
             data: {
               customer_name: customerName,
               customer_id: customerId,
@@ -127,6 +149,7 @@ export class CardsService {
               total_payment: addBalance,
               total_payment_after_tax_service: addBalance,
               note,
+              shop_id: req.shop.id,
             },
           }),
         ]);
@@ -162,7 +185,10 @@ export class CardsService {
 
         const [, report] = await this.prisma.$transaction([
           this.prisma.card.update({
-            where: { id },
+            where: {
+              id,
+              shop_id: req.shop.id,
+            },
             data: { balance },
           }),
           this.prisma.report.create({
@@ -180,6 +206,7 @@ export class CardsService {
               type: ReportType.TOPUP,
               status: ReportStatus.PAID,
               note,
+              shop_id: req.shop.id,
             },
           }),
         ]);
@@ -212,7 +239,10 @@ export class CardsService {
       try {
         const [, report] = await this.prisma.$transaction([
           this.prisma.card.update({
-            where: { id },
+            where: {
+              id,
+              shop_id: req.shop.id,
+            },
             data: {
               status: 'inactive',
               customer_id: '',
@@ -235,6 +265,7 @@ export class CardsService {
               payment_method: paymentMethod,
               status: ReportStatus.PAID,
               note,
+              shop_id: req.shop.id,
             },
           }),
         ]);
@@ -267,7 +298,10 @@ export class CardsService {
       try {
         const [, report] = await this.prisma.$transaction([
           this.prisma.card.update({
-            where: { id },
+            where: {
+              id,
+              shop_id: req.shop.id,
+            },
             data: {
               balance: adjustedBalance,
             },
@@ -287,6 +321,7 @@ export class CardsService {
               status: ReportStatus.PAID,
               payment_method: '',
               note,
+              shop_id: req.shop.id,
             },
           }),
         ]);
@@ -309,7 +344,7 @@ export class CardsService {
   async pay(
     id: string,
     data: CreateReportWithCardDto,
-    username?: string,
+    req: any,
   ): Promise<Response<Report>> {
     const {
       type,
@@ -323,7 +358,7 @@ export class CardsService {
       note,
     } = data;
 
-    const newReportData: Prisma.ReportCreateInput = {
+    const newReportData: any = {
       report_id: Randomize.generateReportId('PAY', 6),
       type,
       status: status || ReportStatus.PAID,
@@ -336,10 +371,11 @@ export class CardsService {
       note: note || '',
       total_payment: 0,
       served_by: '',
+      shop_id: req.shop.id,
     };
 
     try {
-      const crew = await this.crewsService.findOne(crew_id);
+      const crew = await this.crewsService.findOne(req, crew_id);
       if (!crew) throw new NotFoundException('Crew Not Found');
 
       newReportData.served_by = crew.data.name;
@@ -400,7 +436,7 @@ export class CardsService {
 
     // CALCULATE TAX AND SERVICE
     const user = await this.prisma.user.findUnique({
-      where: { username },
+      where: { username: req.user.username },
       include: {
         shops: {
           include: {
@@ -433,7 +469,10 @@ export class CardsService {
     let balance = 0;
     try {
       const card = await this.prisma.card.findUnique({
-        where: { id },
+        where: {
+          id,
+          shop_id: req.shop.id,
+        },
       });
       if (!card) throw new NotFoundException('Card Not Found');
 
@@ -459,6 +498,7 @@ export class CardsService {
         this.prisma.card.update({
           where: {
             id,
+            shop_id: req.shop.id,
           },
           data: {
             balance,
@@ -480,13 +520,18 @@ export class CardsService {
     }
   }
 
-  async remove(id: string): Promise<Response<Card>> {
+  async remove(id: string, req: any): Promise<Response<Card>> {
     try {
       const card = await this.prisma.card.findUnique({ where: { id } });
       if (!card) throw new NotFoundException('Card Not Found');
 
       try {
-        const deletedCard = await this.prisma.card.delete({ where: { id } });
+        const deletedCard = await this.prisma.card.delete({
+          where: {
+            id,
+            shop_id: req.shop.id,
+          },
+        });
 
         return {
           statusCode: 200,

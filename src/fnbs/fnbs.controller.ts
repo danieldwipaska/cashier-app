@@ -10,40 +10,54 @@ import {
   DefaultValuePipe,
   ParseIntPipe,
   ParseBoolPipe,
+  UseGuards,
+  Req,
 } from '@nestjs/common';
 import { FnbsService } from './fnbs.service';
 import { Prisma } from '@prisma/client';
+import { AuthGuard, ShopGuard } from 'src/auth/auth.guard';
+import { CreateFnbDto } from './dto/create-fnb.dto';
 
 @Controller('fnbs')
 export class FnbsController {
   constructor(private readonly fnbsService: FnbsService) {}
 
+  @UseGuards(AuthGuard, ShopGuard)
   @Post()
-  create(@Body() data: Prisma.FnbsCreateInput) {
-    return this.fnbsService.create(data);
+  create(@Req() request: Request, @Body() data: CreateFnbDto) {
+    return this.fnbsService.create(request, data);
   }
 
+  @UseGuards(AuthGuard, ShopGuard)
   @Get()
   findAll(
+    @Req() request: Request,
     @Query('page', new DefaultValuePipe(1), ParseIntPipe) page: number,
     @Query('pagination', new DefaultValuePipe(true), ParseBoolPipe)
     pagination?: boolean,
   ) {
-    return this.fnbsService.findAll(page, pagination);
+    return this.fnbsService.findAll(request, page, pagination);
   }
 
+  @UseGuards(AuthGuard, ShopGuard)
   @Get(':id')
-  findOne(@Param('id') id: string) {
-    return this.fnbsService.findOne(id);
+  findOne(@Req() request: Request, @Param('id') id: string) {
+    return this.fnbsService.findOne(request, id);
   }
 
+  @UseGuards(AuthGuard, ShopGuard)
   @Patch(':id')
-  update(@Param('id') id: string, @Body() data: Prisma.FnbsUpdateInput) {
-    return this.fnbsService.update(id, data);
+  update(
+    @Req() request: Request,
+    @Param('id') id: string,
+    @Body() data: Prisma.FnbsUpdateInput,
+  ) {
+    return this.fnbsService.update(request, id, data);
   }
 
+  @UseGuards(AuthGuard, ShopGuard)
   @Delete(':id')
-  remove(@Param('id') id: string) {
-    return this.fnbsService.remove(id);
+  remove(@Req() request: Request, @Param('id') id: string) {
+    return this.fnbsService.remove(request, id);
   }
 }

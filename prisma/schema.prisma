@@ -35,9 +35,15 @@ model Shop {
   included_tax_service Boolean            @default(true)
   created_at           DateTime           @default(now())
   updated_at           DateTime           @default(now()) @updatedAt
-  users                UsersOnShops[]
-  crews                Crew[]
   BackofficeSetting    BackofficeSetting?
+
+  crews    Crew[]
+  users    UsersOnShops[]
+  Fnbs     Fnbs[]
+  Category Category[]
+  Report   Report[]
+  Card     Card[]
+  Method   Method[]
 }
 
 model UsersOnShops {
@@ -54,8 +60,10 @@ model Category {
   name       String   @unique
   created_at DateTime @default(now())
   updated_at DateTime @default(now()) @updatedAt
-  fnbs       Fnbs[]
+  shop       Shop     @relation(fields: [shop_id], references: [id])
+  shop_id    String
 
+  fnbs                   Fnbs[]
   crew_purchase_category CrewPurchaseCategory[]
 }
 
@@ -79,6 +87,8 @@ model Fnbs {
   updated_at       DateTime @default(now()) @updatedAt
   category         Category @relation(fields: [category_id], references: [id])
   category_id      String
+  shop             Shop     @relation(fields: [shop_id], references: [id])
+  shop_id          String
 }
 
 model Report {
@@ -115,6 +125,8 @@ model Report {
   refund_target_id                String       @default("")
   created_at                      DateTime     @default(now())
   updated_at                      DateTime     @default(now()) @updatedAt
+  shop                            Shop         @relation(fields: [shop_id], references: [id])
+  shop_id                         String
 }
 
 model Card {
@@ -127,13 +139,15 @@ model Card {
   is_member     Boolean
   created_at    DateTime @default(now())
   updated_at    DateTime @default(now()) @updatedAt
+  shop          Shop     @relation(fields: [shop_id], references: [id])
+  shop_id       String
 }
 
 model Crew {
   id         String   @id @default(uuid())
   name       String   @unique
   code       String   @unique
-  position   String
+  position   Position
   shop       Shop     @relation(fields: [shop_id], references: [id])
   shop_id    String
   created_at DateTime @default(now())
@@ -156,6 +170,8 @@ model Method {
   name       String
   created_at DateTime @default(now())
   updated_at DateTime @default(now()) @updatedAt
+  shop       Shop     @relation(fields: [shop_id], references: [id])
+  shop_id    String
 }
 
 enum ReportType {
@@ -178,4 +194,10 @@ enum Role {
   MANAGER
   GREETER
   SERVER
+}
+
+enum Position {
+  SERVER
+  BARTENDER
+  GREETER
 }
