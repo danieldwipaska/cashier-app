@@ -21,6 +21,8 @@ model User {
   created_at DateTime       @default(now())
   updated_at DateTime       @default(now()) @updatedAt
   shops      UsersOnShops[]
+
+  @@map("users")
 }
 
 model Shop {
@@ -44,6 +46,8 @@ model Shop {
   Report   Report[]
   Card     Card[]
   Method   Method[]
+
+  @@map("shops")
 }
 
 model UsersOnShops {
@@ -53,6 +57,7 @@ model UsersOnShops {
   user_id String
 
   @@id([shop_id, user_id])
+  @@map("users_on_shops")
 }
 
 model Category {
@@ -65,6 +70,8 @@ model Category {
 
   fnbs                   Fnbs[]
   crew_purchase_category CrewPurchaseCategory[]
+
+  @@map("categories")
 }
 
 model CrewPurchaseCategory {
@@ -74,6 +81,7 @@ model CrewPurchaseCategory {
   category_id           String
 
   @@id([backoffice_setting_id, category_id])
+  @@map("crew_purchase_categories")
 }
 
 model Fnbs {
@@ -81,6 +89,7 @@ model Fnbs {
   name             String   @unique
   price            Int
   availability     Boolean  @default(true)
+  is_active        Boolean  @default(true)
   discount_status  Boolean  @default(false)
   discount_percent Int      @default(0)
   created_at       DateTime @default(now())
@@ -89,6 +98,27 @@ model Fnbs {
   category_id      String
   shop             Shop     @relation(fields: [shop_id], references: [id])
   shop_id          String
+
+  Item Item[]
+
+  @@map("fnbs")
+}
+
+model Item {
+  id               String   @id @default(uuid())
+  fnb              Fnbs     @relation(fields: [fnb_id], references: [id])
+  fnb_id           String
+  amount           Int
+  refunded_amount  Int      @default(0)
+  discount_percent Int      @default(0)
+  price            Int
+  created_at       DateTime @default(now())
+  updated_at       DateTime @default(now()) @updatedAt
+
+  report    Report @relation(fields: [report_id], references: [id])
+  report_id String
+
+  @@map("items")
 }
 
 model Report {
@@ -99,9 +129,6 @@ model Report {
   customer_name                   String
   customer_id                     String       @default("")
   card_number                     String       @default("")
-  served_by                       String
-  crew_id                         String       @default("")
-  collected_by                    String       @default("Greeter")
   initial_balance                 Int          @default(0)
   final_balance                   Int          @default(0)
   total_payment                   Float
@@ -110,37 +137,38 @@ model Report {
   tax_percent                     Float        @default(0)
   service_percent                 Float        @default(0)
   total_tax                       Float        @default(0)
-  payment_method                  String       @default("")
   note                            String       @default("")
-  order_id                        String[]     @default([])
-  order_name                      String[]     @default([])
-  order_category                  String[]     @default([])
-  order_amount                    Int[]        @default([])
-  refunded_order_amount           Int[]        @default([])
-  order_price                     Float[]      @default([])
-  order_discount_status           Boolean[]    @default([])
-  order_discount_percent          Float[]      @default([])
-  deleted_status                  Boolean      @default(false)
+  is_deleted                      Boolean      @default(false)
   refund_status                   Boolean      @default(false)
   refund_target_id                String       @default("")
   created_at                      DateTime     @default(now())
   updated_at                      DateTime     @default(now()) @updatedAt
   shop                            Shop         @relation(fields: [shop_id], references: [id])
   shop_id                         String
+  crew                            Crew         @relation(fields: [crew_id], references: [id])
+  crew_id                         String
+  method                          Method?       @relation(fields: [method_id], references: [id])
+  method_id                       String?
+
+  Item Item[]
+
+  @@map("reports")
 }
 
 model Card {
-  id            String   @id @default(uuid())
-  card_number   String   @unique
-  customer_id   String   @default("")
-  customer_name String   @default("")
-  balance       Int      @default(0)
-  status        String   @default("inactive")
+  id            String     @id @default(uuid())
+  card_number   String     @unique
+  customer_id   String     @default("")
+  customer_name String     @default("")
+  balance       Int        @default(0)
+  status        CardStatus @default(INACTIVE)
   is_member     Boolean
-  created_at    DateTime @default(now())
-  updated_at    DateTime @default(now()) @updatedAt
-  shop          Shop     @relation(fields: [shop_id], references: [id])
+  created_at    DateTime   @default(now())
+  updated_at    DateTime   @default(now()) @updatedAt
+  shop          Shop       @relation(fields: [shop_id], references: [id])
   shop_id       String
+
+  @@map("cards")
 }
 
 model Crew {
@@ -150,8 +178,12 @@ model Crew {
   position   Position
   shop       Shop     @relation(fields: [shop_id], references: [id])
   shop_id    String
+  is_active  Boolean  @default(true)
   created_at DateTime @default(now())
   updated_at DateTime @default(now()) @updatedAt
+  Report     Report[]
+
+  @@map("crews")
 }
 
 model BackofficeSetting {
@@ -163,15 +195,21 @@ model BackofficeSetting {
   updated_at DateTime @default(now()) @updatedAt
 
   CrewPurchaseCategory CrewPurchaseCategory[]
+
+  @@map("backoffice_settings")
 }
 
 model Method {
   id         String   @id @default(uuid())
   name       String
+  is_active  Boolean  @default(true)
   created_at DateTime @default(now())
   updated_at DateTime @default(now()) @updatedAt
   shop       Shop     @relation(fields: [shop_id], references: [id])
   shop_id    String
+  Report     Report[]
+
+  @@map("methods")
 }
 
 enum ReportType {
@@ -200,4 +238,11 @@ enum Position {
   SERVER
   BARTENDER
   GREETER
+}
+
+enum CardStatus {
+  ACTIVE
+  INACTIVE
+  BLOCKED
+  EXPIRED
 }

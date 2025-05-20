@@ -25,10 +25,9 @@ export class ReportsService {
       status,
       customer_name,
       payment_method,
-      order_id,
-      order_amount,
       crew_id,
       note,
+      items,
     } = createReportDto;
 
     const newReportData: any = {
@@ -38,75 +37,46 @@ export class ReportsService {
       customer_name,
       crew_id,
       payment_method,
-      order_id,
-      order_amount,
       note: note || '',
       total_payment: 0,
-      served_by: '',
       shop_id: req.shop.id,
+      included_tax_service: false,
+      total_payment_after_tax_service: 0,
+      tax_percent: 0,
+      service_percent: 0,
+      total_tax: 0,
+      Item: {
+        create: items.map((item) => ({
+          fnb_id: item.fnb_id,
+          amount: item.amount,
+          refunded_amount: item.refunded_amount || 0,
+          discount_percent: item.discount_percent || 0,
+          price: item.price,
+        })),
+      },
     };
 
     try {
       const crew = await this.crewsService.findOne(req, crew_id);
       if (!crew) throw new NotFoundException('Crew Not Found');
-
-      newReportData.served_by = crew.data.name;
-      newReportData.collected_by = crew.data.name;
     } catch (error) {
       throw error;
     }
-
-    // FOOD AND BEVERAGE DATA
-    const orderName: string[] = [];
-    const orderCategory: string[] = [];
-    const orderPrice: number[] = [];
-    const orderDiscountStatus: boolean[] = [];
-    const orderDiscountPercent: number[] = [];
-    const refundedOrderAmount: number[] = Array(order_id.length).fill(0);
-
-    try {
-      for (const id of order_id) {
-        const fnb = await this.prisma.fnbs.findUnique({
-          where: { id },
-          include: { category: true },
-        });
-        if (!fnb) throw new NotFoundException('Food And Beverage Not Found');
-
-        orderName.push(fnb.name);
-        orderPrice.push(fnb.price);
-        orderCategory.push(fnb.category.name);
-        orderDiscountPercent.push(fnb.discount_percent);
-        orderDiscountStatus.push(fnb.discount_status);
-      }
-    } catch (error) {
-      console.log(error);
-      throw error;
-    }
-
-    newReportData.order_name = orderName;
-    newReportData.order_price = orderPrice;
-    newReportData.order_category = orderCategory;
-    newReportData.order_discount_status = orderDiscountStatus;
-    newReportData.order_discount_percent = orderDiscountPercent;
-    newReportData.refunded_order_amount = refundedOrderAmount;
 
     // CALCULATE TOTAL PAYMENT
     let totalPayment = 0;
-    order_amount.forEach((amount: number, index: number) => {
+    items.forEach((item) => {
       totalPayment += orderDiscountedPrice({
-        price: orderPrice[index],
-        amount,
-        discountPercent: orderDiscountPercent[index],
+        price: item.price,
+        amount: item.amount,
+        discountPercent: item.discount_percent || 0,
       });
     });
-
     newReportData.total_payment = totalPayment;
 
     // CALCULATE TAX AND SERVICE
     const shop = await this.prisma.shop.findUnique({
-      where: {
-        id: req.shop.id,
-      },
+      where: { id: req.shop.id },
     });
     if (!shop) throw new NotFoundException('Shop Not Found');
 
@@ -127,8 +97,8 @@ export class ReportsService {
     try {
       const report = await this.prisma.report.create({
         data: newReportData,
+        include: { Item: true },
       });
-
       return {
         statusCode: 201,
         message: 'CREATED',
@@ -148,7 +118,7 @@ export class ReportsService {
       status: ReportStatus;
       customer_name: string;
       customer_id: string;
-      served_by: string;
+      crew_id: string;
       type: ReportType | any;
       shop_id: string;
     },
@@ -277,123 +247,81 @@ export class ReportsService {
     updateReportDto: UpdateReportDto,
     req: any,
   ): Promise<Response<Report>> {
-    const {
-      status,
-      customer_name,
-      payment_method,
-      order_id,
-      order_amount,
-      crew_id,
-      note,
-    } = updateReportDto;
+    const { status, customer_name, payment_method, crew_id, note, items } =
+      updateReportDto;
 
     const reportData: any = {
       status: status || ReportStatus.PAID,
       customer_name,
       crew_id,
       payment_method,
-      order_id,
-      order_amount,
       note: note || '',
       total_payment: 0,
-      served_by: '',
     };
 
-    try {
-      const crew = await this.crewsService.findOne(req, crew_id);
-      if (!crew) throw new NotFoundException('Crew Not Found');
-
-      reportData.served_by = crew.data.name;
-      reportData.collected_by = crew.data.name;
-    } catch (error) {
-      throw error;
-    }
-
-    // FOOD AND BEVERAGE DATA
-    const orderName: string[] = [];
-    const orderCategory: string[] = [];
-    const orderPrice: number[] = [];
-    const orderDiscountStatus: boolean[] = [];
-    const orderDiscountPercent: number[] = [];
-    const refundedOrderAmount: number[] = Array(order_id.length).fill(0);
+    // CALCULATE TOTAL PAYMENT
+    let totalPayment = 0;
+    items.forEach((item) => {
+      totalPayment += orderDiscountedPrice({
+        price: item.price,
+        amount: item.amount,
+        discountPercent: item.discount_percent || 0,
+      });
+    });
+    reportData.total_payment = totalPayment;
 
     try {
-      for (const id of order_id) {
-        const fnb = await this.prisma.fnbs.findUnique({
+      // CALCULATE TAX AND SERVICE
+      const shop = await this.prisma.shop.findUnique({
+        where: { id: req.shop.id },
+      });
+      if (!shop) throw new NotFoundException('User Not Found');
+
+      reportData.included_tax_service = shop.included_tax_service;
+
+      const taxService = new ServiceTax(totalPayment, shop.service, shop.tax);
+
+      if (!shop.included_tax_service) {
+        reportData.total_payment_after_tax_service = taxService.calculateTax();
+      } else {
+        reportData.total_payment_after_tax_service = taxService.totalPayment;
+      }
+
+      reportData.tax_percent = taxService.taxPercent;
+      reportData.service_percent = taxService.servicePercent;
+      reportData.total_tax = taxService.getTax();
+
+      try {
+        // Remove old items and add new ones
+        await this.prisma.item.deleteMany({ where: { report_id: id } });
+        await this.prisma.item.createMany({
+          data: items.map((item) => ({
+            report_id: id,
+            fnb_id: item.fnb_id,
+            amount: item.amount,
+            refunded_amount: item.refunded_amount || 0,
+            discount_percent: item.discount_percent || 0,
+            price: item.price,
+          })),
+        });
+
+        const report = await this.prisma.report.update({
           where: {
             id,
             shop_id: req.shop.id,
           },
-          include: { category: true },
+          data: reportData,
+          include: { Item: true },
         });
-        if (!fnb) throw new NotFoundException('Food And Beverage Not Found');
-
-        orderName.push(fnb.name);
-        orderPrice.push(fnb.price);
-        orderCategory.push(fnb.category.name);
-        orderDiscountPercent.push(fnb.discount_percent);
-        orderDiscountStatus.push(fnb.discount_status);
+        return {
+          statusCode: 200,
+          message: 'OK',
+          data: report,
+        };
+      } catch (error) {
+        console.log(error);
+        throw error;
       }
-    } catch (error) {
-      console.log(error);
-      throw error;
-    }
-
-    reportData.order_name = orderName;
-    reportData.order_price = orderPrice;
-    reportData.order_category = orderCategory;
-    reportData.order_discount_status = orderDiscountStatus;
-    reportData.order_discount_percent = orderDiscountPercent;
-    reportData.refunded_order_amount = refundedOrderAmount;
-
-    // CALCULATE TOTAL PAYMENT
-    let totalPayment = 0;
-    order_amount.forEach((amount: number, index: number) => {
-      totalPayment += orderDiscountedPrice({
-        price: orderPrice[index],
-        amount,
-        discountPercent: orderDiscountPercent[index],
-      });
-    });
-
-    reportData.total_payment = totalPayment;
-
-    // CALCULATE TAX AND SERVICE
-    const shop = await this.prisma.shop.findUnique({
-      where: {
-        id: req.shop.id,
-      },
-    });
-    if (!shop) throw new NotFoundException('User Not Found');
-
-    reportData.included_tax_service = shop.included_tax_service;
-
-    const taxService = new ServiceTax(totalPayment, shop.service, shop.tax);
-
-    if (!shop.included_tax_service) {
-      reportData.total_payment_after_tax_service = taxService.calculateTax();
-    } else {
-      reportData.total_payment_after_tax_service = taxService.totalPayment;
-    }
-
-    reportData.tax_percent = taxService.taxPercent;
-    reportData.service_percent = taxService.servicePercent;
-    reportData.total_tax = taxService.getTax(); // not yet handled
-
-    try {
-      const report = await this.prisma.report.update({
-        where: {
-          id,
-          shop_id: req.shop.id,
-        },
-        data: reportData,
-      });
-
-      return {
-        statusCode: 200,
-        message: 'OK',
-        data: report,
-      };
     } catch (error) {
       console.log(error);
       throw error;
@@ -403,129 +331,126 @@ export class ReportsService {
   async refundPartially(
     request: any,
     id: string,
-    data: any,
+    updateReportDto: UpdateReportDto,
   ): Promise<Response<Report>> {
+    const { items } = updateReportDto;
     try {
       const report = await this.prisma.report.findUnique({
         where: {
           id,
           shop_id: request.shop.id,
         },
+        include: { Item: true },
       });
       if (!report) throw new NotFoundException('Report Not Found');
 
-      // Refund Data
+      // Calculate refund based on items
       let total_payment = 0;
-
-      data.refunded_order_amount.forEach((amount: number, index: number) => {
-        if (report.order_discount_status[index]) {
-          total_payment += orderDiscountedPrice({
-            price: report.order_price[index],
-            amount,
-            discountPercent: report.order_discount_percent[index],
-          });
-        } else {
-          total_payment += amount * report.order_price[index];
-        }
-      });
+      for (const item of items) {
+        const originalItem = report.Item.find((i) => i.fnb_id === item.fnb_id);
+        if (!originalItem) continue;
+        const refundAmount = item.refunded_amount || 0;
+        total_payment += orderDiscountedPrice({
+          price: originalItem.price,
+          amount: refundAmount,
+          discountPercent: originalItem.discount_percent || 0,
+        });
+      }
 
       let total_payment_after_tax_service = 0;
-
       const taxService = new ServiceTax(
         total_payment,
         report.service_percent,
         report.tax_percent,
       );
-
       if (!report.included_tax_service) {
         total_payment_after_tax_service = taxService.calculateTax();
       } else {
         total_payment_after_tax_service = taxService.totalPayment;
       }
-
       const total_tax = taxService.getTax();
 
-      const updatedRefundedOrderAmount = report.refunded_order_amount.map(
-        (amount: number, i: number) => amount + data.refunded_order_amount[i],
-      );
+      // Update refunded_amount for each item
+      for (const item of items) {
+        await this.prisma.item.updateMany({
+          where: { report_id: id, fnb_id: item.fnb_id },
+          data: { refunded_amount: item.refunded_amount || 0 },
+        });
+      }
 
       if (report.card_number) {
-        try {
-          await this.prisma.$transaction([
-            this.prisma.report.update({
-              where: {
-                id,
-                shop_id: request.shop.id,
-              },
-              data: {
-                ...report,
-                refund_status: true,
-                refunded_order_amount: updatedRefundedOrderAmount,
-              },
-            }),
-            this.prisma.report.create({
-              data: {
-                ...report,
-                refund_target_id: report.id,
-                refund_status: true,
-                refunded_order_amount: data.refunded_order_amount,
-                id: undefined,
-                created_at: undefined,
-                updated_at: undefined,
-                type: ReportType.REFUND,
-                total_payment: -total_payment,
-                total_tax,
-                total_payment_after_tax_service:
-                  -total_payment_after_tax_service,
-                shop_id: request.shop.id,
-              },
-            }),
-            this.prisma.card.update({
-              where: {
-                card_number: report.card_number,
-                shop_id: request.shop.id,
-              },
-              data: {
-                balance: {
-                  increment: total_payment_after_tax_service,
-                },
-              },
-            }),
-          ]);
-
-          return {
-            statusCode: 200,
-            message: 'OK',
-          };
-        } catch (error) {
-          throw error;
-        }
+        await this.prisma.$transaction([
+          this.prisma.report.update({
+            where: { id, shop_id: request.shop.id },
+            data: { refund_status: true },
+          }),
+          this.prisma.report.create({
+            data: {
+              report_id: Randomize.generateReportId('REFUND', 6),
+              type: ReportType.REFUND,
+              status: ReportStatus.PAID,
+              customer_name: report.customer_name,
+              customer_id: report.customer_id,
+              card_number: report.card_number,
+              initial_balance: report.initial_balance,
+              final_balance: report.final_balance,
+              total_payment: -total_payment,
+              included_tax_service: report.included_tax_service,
+              total_payment_after_tax_service: -total_payment_after_tax_service,
+              tax_percent: report.tax_percent,
+              service_percent: report.service_percent,
+              total_tax: total_tax,
+              note: report.note,
+              is_deleted: false,
+              refund_status: true,
+              refund_target_id: report.id,
+              shop_id: report.shop_id,
+              crew_id: report.crew_id,
+              method_id: report.method_id,
+            },
+          }),
+          this.prisma.card.update({
+            where: {
+              card_number: report.card_number,
+              shop_id: request.shop.id,
+            },
+            data: { balance: { increment: total_payment_after_tax_service } },
+          }),
+        ]);
+        return { statusCode: 200, message: 'OK' };
       } else {
         await this.prisma.$transaction([
           this.prisma.report.update({
             where: { id },
-            data: {
-              ...report,
-              refund_status: true,
-              refunded_order_amount: updatedRefundedOrderAmount,
-            },
+            data: { refund_status: true },
           }),
           this.prisma.report.create({
             data: {
-              ...report,
-              refund_target_id: report.id,
-              refund_status: true,
-              refunded_order_amount: data.refunded_order_amount,
-              id: undefined,
-              created_at: undefined,
-              updated_at: undefined,
+              report_id: Randomize.generateReportId('REFUND', 6),
               type: ReportType.REFUND,
+              status: ReportStatus.PAID,
+              customer_name: report.customer_name,
+              customer_id: report.customer_id,
+              card_number: report.card_number,
+              initial_balance: report.initial_balance,
+              final_balance: report.final_balance,
               total_payment: -total_payment,
-              total_tax,
+              included_tax_service: report.included_tax_service,
               total_payment_after_tax_service: -total_payment_after_tax_service,
+              tax_percent: report.tax_percent,
+              service_percent: report.service_percent,
+              total_tax: total_tax,
+              note: report.note,
+              is_deleted: false,
+              refund_status: true,
+              refund_target_id: report.id,
+              shop_id: report.shop_id,
+              crew_id: report.crew_id,
+              method_id: report.method_id,
             },
           }),
         ]);
+        return { statusCode: 200, message: 'OK' };
       }
     } catch (error) {
       throw error;

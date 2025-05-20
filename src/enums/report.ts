@@ -12,3 +12,16 @@ export enum ReportStatus {
   UNPAID = 'UNPAID',
   CANCELLED = 'CANCELLED',
 }
+
+export enum Position {
+  SERVER = 'SERVER',
+  BARTENDER = 'BARTENDER',
+  GREETER = 'GREETER',
+}
+
+export enum CardStatus {
+  ACTIVE = 'ACTIVE',
+  INACTIVE = 'INACTIVE',
+  BLOCKED = 'BLOCKED',
+  EXPIRED = 'EXPIRED',
+}

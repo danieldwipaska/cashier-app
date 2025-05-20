@@ -15,7 +15,6 @@ import {
   Req,
 } from '@nestjs/common';
 import { ReportsService } from './reports.service';
-import { Prisma } from '@prisma/client';
 import { CreateReportDto } from './dto/create-report.dto';
 import { AuthGuard, ShopGuard } from 'src/auth/auth.guard';
 import { UpdateReportDto } from './dto/update-report.dto';
@@ -40,7 +39,7 @@ export class ReportsController {
     @Query('status') status: ReportStatus,
     @Query('customer_name') customer_name: string,
     @Query('customer_id') customer_id: string,
-    @Query('served_by') served_by: string,
+    @Query('crew_id') crew_id: string,
     @Query('type') type: ReportType | ReportType[],
     @Query('page', new DefaultValuePipe(1), ParseIntPipe) page: number,
     @Query('pagination', new DefaultValuePipe(true), ParseBoolPipe)
@@ -54,7 +53,7 @@ export class ReportsController {
         status,
         customer_name,
         customer_id,
-        served_by,
+        crew_id,
         type,
         shop_id: '',
       },
@@ -98,9 +97,9 @@ export class ReportsController {
   refundPartially(
     @Req() request: Request,
     @Param('id') id: string,
-    @Body() data: Prisma.ReportUpdateInput,
+    @Body() updateReportDto: UpdateReportDto,
   ) {
-    return this.reportsService.refundPartially(request, id, data);
+    return this.reportsService.refundPartially(request, id, updateReportDto);
   }
 
   @UseGuards(AuthGuard, ShopGuard)

@@ -56,7 +56,7 @@ export class CrewGuard implements CanActivate {
         throw new UnauthorizedException();
       }
 
-      request['crewName'] = crew.data.name;
+      request['crew'] = crew.data;
     } catch {
       throw new UnauthorizedException();
     }
