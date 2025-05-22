@@ -49,10 +49,15 @@ export class UpdateReportDto {
   readonly customer_name: string;
 
   @IsString()
+  @IsUUID(4, { message: 'Payment Method must be a valid UUID' })
   @IsNotEmpty()
-  @MaxLength(50, { message: 'Customer cannot be longer than 50 characters' })
-  @MinLength(2, { message: 'Customer cannot be shorter than 2 characters' })
-  readonly payment_method: string;
+  @MaxLength(50, {
+    message: 'Payment method cannot be longer than 50 characters',
+  })
+  @MinLength(2, {
+    message: 'Payment method cannot be shorter than 2 characters',
+  })
+  readonly method_id: string;
 
   @IsArray()
   @ArrayMinSize(1, { message: 'Order ID cannot be empty' })

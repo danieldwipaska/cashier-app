@@ -9,11 +9,12 @@ import {
   UseGuards,
   Request,
   Req,
+  ValidationPipe,
 } from '@nestjs/common';
 import { CrewsService } from './crews.service';
-import { Prisma } from '@prisma/client';
 import { AuthGuard, ShopGuard } from 'src/auth/auth.guard';
 import { UpdateCrewDto } from './dto/update-crew.dto';
+import { CreateCrewDto } from './dto/create-crew.dto';
 
 @Controller('crews')
 export class CrewsController {
@@ -21,8 +22,15 @@ export class CrewsController {
 
   @UseGuards(AuthGuard, ShopGuard)
   @Post()
-  create(@Body() data: Prisma.CrewCreateInput, @Request() req) {
-    return this.crewsService.create(data, req.user.username, req.shop.id);
+  create(
+    @Body(new ValidationPipe()) createCrewDto: CreateCrewDto,
+    @Request() req,
+  ) {
+    return this.crewsService.create(
+      createCrewDto,
+      req.user.username,
+      req.shop.id,
+    );
   }
 
   @UseGuards(AuthGuard, ShopGuard)
@@ -48,7 +56,7 @@ export class CrewsController {
   update(
     @Req() request: Request,
     @Param('id') id: string,
-    @Body() updateCrewDto: UpdateCrewDto,
+    @Body(new ValidationPipe()) updateCrewDto: UpdateCrewDto,
   ) {
     return this.crewsService.update(request, id, updateCrewDto);
   }

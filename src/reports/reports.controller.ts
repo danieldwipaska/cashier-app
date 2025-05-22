@@ -13,6 +13,7 @@ import {
   UseGuards,
   ParseBoolPipe,
   Req,
+  ValidationPipe,
 } from '@nestjs/common';
 import { ReportsService } from './reports.service';
 import { CreateReportDto } from './dto/create-report.dto';
@@ -26,7 +27,10 @@ export class ReportsController {
 
   @UseGuards(AuthGuard, ShopGuard)
   @Post()
-  create(@Body() createReportDto: CreateReportDto, @Request() req) {
+  create(
+    @Body(new ValidationPipe()) createReportDto: CreateReportDto,
+    @Request() req,
+  ) {
     return this.reportsService.create(createReportDto, req);
   }
 
@@ -86,7 +90,7 @@ export class ReportsController {
   @Patch(':id')
   update(
     @Param('id') id: string,
-    @Body() data: UpdateReportDto,
+    @Body(new ValidationPipe()) data: UpdateReportDto,
     @Request() req,
   ) {
     return this.reportsService.update(id, data, req);

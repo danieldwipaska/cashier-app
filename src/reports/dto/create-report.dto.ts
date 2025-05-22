@@ -58,7 +58,7 @@ export class CreateReportDto {
   @MinLength(2, {
     message: 'Payment method cannot be shorter than 2 characters',
   })
-  readonly payment_method: string;
+  readonly method_id: string;
 
   @IsUUID(4, { message: 'Crew ID must be a valid UUID' })
   @IsNotEmpty()

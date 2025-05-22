@@ -20,15 +20,8 @@ export class ReportsService {
     createReportDto: CreateReportDto,
     req: any,
   ): Promise<Response<Report>> {
-    const {
-      type,
-      status,
-      customer_name,
-      payment_method,
-      crew_id,
-      note,
-      items,
-    } = createReportDto;
+    const { type, status, customer_name, method_id, crew_id, note, items } =
+      createReportDto;
 
     const newReportData: any = {
       report_id: Randomize.generateReportId('PAY', 6),
@@ -36,7 +29,7 @@ export class ReportsService {
       status: status || ReportStatus.PAID,
       customer_name,
       crew_id,
-      payment_method,
+      method_id,
       note: note || '',
       total_payment: 0,
       shop_id: req.shop.id,
@@ -112,15 +105,15 @@ export class ReportsService {
 
   async findAll(
     request: any,
-    from: string,
-    to: string,
-    filter: {
-      status: ReportStatus;
-      customer_name: string;
-      customer_id: string;
-      crew_id: string;
-      type: ReportType | any;
-      shop_id: string;
+    from?: string,
+    to?: string,
+    filter?: {
+      status?: ReportStatus;
+      customer_name?: string;
+      customer_id?: string;
+      crew_id?: string;
+      type?: ReportType | any;
+      shop_id?: string;
     },
     page?: number,
     pagination?: boolean,
@@ -140,7 +133,9 @@ export class ReportsService {
       };
     }
 
-    filter.shop_id = request.shop.id;
+    if (filter) {
+      filter.shop_id = request.shop.id;
+    }
 
     try {
       // eslint-disable-next-line prefer-const
@@ -247,14 +242,14 @@ export class ReportsService {
     updateReportDto: UpdateReportDto,
     req: any,
   ): Promise<Response<Report>> {
-    const { status, customer_name, payment_method, crew_id, note, items } =
+    const { status, customer_name, method_id, crew_id, note, items } =
       updateReportDto;
 
     const reportData: any = {
       status: status || ReportStatus.PAID,
       customer_name,
       crew_id,
-      payment_method,
+      method_id,
       note: note || '',
       total_payment: 0,
     };

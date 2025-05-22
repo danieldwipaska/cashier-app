@@ -30,7 +30,7 @@ export class UserOnShopsController {
   update(
     @Param('shop_id') shop_id: string,
     @Param('user_id') user_id: string,
-    @Body() updateUserOnShopDto: UpdateUserOnShopDto,
+    @Body(new ValidationPipe()) updateUserOnShopDto: UpdateUserOnShopDto,
   ) {
     return this.userOnShopsService.update(
       shop_id,
