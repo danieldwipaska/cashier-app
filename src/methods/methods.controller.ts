@@ -8,6 +8,7 @@ import {
   Delete,
   UseGuards,
   Req,
+  ValidationPipe,
 } from '@nestjs/common';
 import { MethodsService } from './methods.service';
 import { AuthGuard, ShopGuard } from 'src/auth/auth.guard';
@@ -20,7 +21,10 @@ export class MethodsController {
 
   @UseGuards(AuthGuard, ShopGuard)
   @Post()
-  create(@Req() request: Request, @Body() createMethodDto: CreateMethodDto) {
+  create(
+    @Req() request: Request,
+    @Body(new ValidationPipe()) createMethodDto: CreateMethodDto,
+  ) {
     return this.methodsService.create(request, createMethodDto);
   }
 
@@ -41,7 +45,7 @@ export class MethodsController {
   update(
     @Req() request: Request,
     @Param('id') id: string,
-    @Body() updateMethodDto: UpdateMethodDto,
+    @Body(new ValidationPipe()) updateMethodDto: UpdateMethodDto,
   ) {
     return this.methodsService.update(request, id, updateMethodDto);
   }

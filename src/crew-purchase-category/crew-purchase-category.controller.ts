@@ -22,7 +22,8 @@ export class CrewPurchaseCategoryController {
 
   @Get()
   findAll(
-    @Body() updateCrewPurchaseCategoryDto: UpdateCrewPurchaseCategoryDto,
+    @Body(new ValidationPipe())
+    updateCrewPurchaseCategoryDto: UpdateCrewPurchaseCategoryDto,
   ) {
     return this.crewPurchaseCategoryService.findAll(
       updateCrewPurchaseCategoryDto,

@@ -5,7 +5,7 @@ import {
 } from '@nestjs/common';
 import { Card, Report } from '@prisma/client';
 import { CrewsService } from 'src/crews/crews.service';
-import { ReportStatus, ReportType } from 'src/enums/report';
+import { CardStatus, ReportStatus, ReportType } from 'src/enums/report';
 import { PageMetaData } from 'src/interfaces/pagination.interface';
 import Response from 'src/interfaces/response.interface';
 import { PrismaService } from 'src/prisma.service';
@@ -14,12 +14,14 @@ import Randomize from 'src/utils/randomize.util';
 import { CreateCardDto } from './dto/create-card.dto';
 import { CreateReportWithCardDto } from 'src/reports/dto/create-report.dto';
 import { orderDiscountedPrice, ServiceTax } from 'src/utils/calculation.util';
+import { MethodsService } from 'src/methods/methods.service';
 
 @Injectable()
 export class CardsService {
   constructor(
     private prisma: PrismaService,
     private crewsService: CrewsService,
+    private methodsService: MethodsService,
   ) {}
 
   async create(
@@ -110,13 +112,16 @@ export class CardsService {
     customerName: string,
     customerId: string,
     addBalance: number,
-    paymentMethod: string,
+    paymentMethodId: string,
     note: string,
     req: any,
   ): Promise<Response<Report>> {
     try {
       const card = await this.prisma.card.findUnique({ where: { id } });
       if (!card) throw new NotFoundException('Card Not Found');
+
+      const method = await this.methodsService.findOne(req, paymentMethodId);
+      if (!method) throw new NotFoundException('Payment Method Not Found');
 
       try {
         const balance: number = card.balance + addBalance;
@@ -131,7 +136,7 @@ export class CardsService {
               customer_name: customerName,
               customer_id: customerId,
               balance,
-              status: 'active',
+              status: CardStatus.ACTIVE,
             },
           }),
           this.prisma.report.create({
@@ -142,12 +147,12 @@ export class CardsService {
               customer_name: customerName,
               customer_id: customerId,
               card_number: card.card_number,
-              payment_method: paymentMethod,
-              served_by: req.crewName,
               initial_balance: card.balance,
               final_balance: balance,
               total_payment: addBalance,
               total_payment_after_tax_service: addBalance,
+              method_id: paymentMethodId,
+              crew_id: req.crew.id,
               note,
               shop_id: req.shop.id,
             },
@@ -172,13 +177,16 @@ export class CardsService {
   async topUp(
     id: string,
     addBalance: number,
-    paymentMethod: string,
+    paymentMethodId: string,
     note: string,
     req: any,
   ): Promise<Response<Report>> {
     try {
       const card = await this.prisma.card.findUnique({ where: { id } });
       if (!card) throw new NotFoundException('Card Not Found');
+
+      const method = await this.methodsService.findOne(req, paymentMethodId);
+      if (!method) throw new NotFoundException('Payment Method Not Found');
 
       try {
         const balance: number = card.balance + addBalance;
@@ -197,14 +205,14 @@ export class CardsService {
               customer_name: card.customer_name,
               customer_id: card.customer_id,
               card_number: card.card_number,
-              payment_method: paymentMethod,
-              served_by: req.crewName,
               total_payment: addBalance,
               total_payment_after_tax_service: addBalance,
               initial_balance: card.balance,
               final_balance: balance,
               type: ReportType.TOPUP,
               status: ReportStatus.PAID,
+              method_id: paymentMethodId,
+              crew_id: req.crew.id,
               note,
               shop_id: req.shop.id,
             },
@@ -228,13 +236,16 @@ export class CardsService {
 
   async checkout(
     id: string,
-    paymentMethod: string,
+    paymentMethodId: string,
     note: string,
     req: any,
   ): Promise<Response<Report>> {
     try {
       const card = await this.prisma.card.findUnique({ where: { id } });
       if (!card) throw new NotFoundException('Card Not Found');
+
+      const method = await this.methodsService.findOne(req, paymentMethodId);
+      if (!method) throw new NotFoundException('Payment Method Not Found');
 
       try {
         const [, report] = await this.prisma.$transaction([
@@ -244,7 +255,7 @@ export class CardsService {
               shop_id: req.shop.id,
             },
             data: {
-              status: 'inactive',
+              status: CardStatus.INACTIVE,
               customer_id: '',
               customer_name: '',
               balance: 0,
@@ -256,14 +267,14 @@ export class CardsService {
               customer_name: card.customer_name,
               customer_id: card.customer_id,
               card_number: card.card_number,
-              served_by: req.crewName,
               total_payment: card.balance,
               total_payment_after_tax_service: card.balance,
               initial_balance: card.balance,
               final_balance: 0,
               type: ReportType.CHECKOUT,
-              payment_method: paymentMethod,
               status: ReportStatus.PAID,
+              crew_id: req.crew.id,
+              method_id: paymentMethodId,
               note,
               shop_id: req.shop.id,
             },
@@ -312,14 +323,13 @@ export class CardsService {
               customer_name: card.customer_name,
               customer_id: card.customer_id,
               card_number: card.card_number,
-              served_by: req.crewName,
               total_payment: adjustedBalance - card.balance,
               total_payment_after_tax_service: adjustedBalance - card.balance,
               initial_balance: card.balance,
               final_balance: adjustedBalance,
               type: ReportType.ADJUSTMENT,
               status: ReportStatus.PAID,
-              payment_method: '',
+              crew_id: req.crew.id,
               note,
               shop_id: req.shop.id,
             },
@@ -351,11 +361,10 @@ export class CardsService {
       status,
       customer_name,
       customer_id,
-      payment_method,
-      order_id,
-      order_amount,
+      method_id,
       crew_id,
       note,
+      items,
     } = data;
 
     const newReportData: any = {
@@ -365,73 +374,30 @@ export class CardsService {
       customer_name,
       customer_id,
       crew_id,
-      payment_method,
-      order_id,
-      order_amount,
+      method_id,
       note: note || '',
       total_payment: 0,
-      served_by: '',
       shop_id: req.shop.id,
+      Item: {
+        create: items.map((item) => ({
+          fnb_id: item.fnb_id,
+          amount: item.amount,
+          refunded_amount: item.refunded_amount || 0,
+          discount_percent: item.discount_percent || 0,
+          price: item.price,
+        })),
+      },
     };
-
-    try {
-      const crew = await this.crewsService.findOne(req, crew_id);
-      if (!crew) throw new NotFoundException('Crew Not Found');
-
-      newReportData.served_by = crew.data.name;
-      newReportData.collected_by = crew.data.name;
-    } catch (error) {
-      throw error;
-    }
-
-    // FOOD AND BEVERAGE DATA
-    const orderName: string[] = [];
-    const orderCategory: string[] = [];
-    const orderPrice: number[] = [];
-    const orderDiscountStatus: boolean[] = [];
-    const orderDiscountPercent: number[] = [];
-    const refundedOrderAmount: number[] = Array(order_id.length).fill(0);
-
-    try {
-      for (const id of order_id) {
-        const fnb = await this.prisma.fnbs.findUnique({
-          where: { id },
-          include: { category: true },
-        });
-        if (!fnb) throw new NotFoundException('Food And Beverage Not Found');
-
-        orderName.push(fnb.name);
-        orderPrice.push(fnb.price);
-        orderCategory.push(fnb.category.name);
-        orderDiscountPercent.push(fnb.discount_percent);
-        orderDiscountStatus.push(fnb.discount_status);
-      }
-    } catch (error) {
-      console.log(error);
-      throw error;
-    }
-
-    newReportData.order_name = orderName;
-    newReportData.order_price = orderPrice;
-    newReportData.order_category = orderCategory;
-    newReportData.order_discount_status = orderDiscountStatus;
-    newReportData.order_discount_percent = orderDiscountPercent;
-    newReportData.refunded_order_amount = refundedOrderAmount;
 
     // CALCULATE TOTAL PAYMENT
     let totalPayment = 0;
-    order_amount.forEach((amount: number, index: number) => {
-      if (orderDiscountStatus) {
-        totalPayment += orderDiscountedPrice({
-          price: orderPrice[index],
-          amount,
-          discountPercent: orderDiscountPercent[index],
-        });
-      } else {
-        totalPayment += amount * orderPrice[index];
-      }
+    items.forEach((item) => {
+      totalPayment += orderDiscountedPrice({
+        price: item.price,
+        amount: item.amount,
+        discountPercent: item.discount_percent || 0,
+      });
     });
-
     newReportData.total_payment = totalPayment;
 
     // CALCULATE TAX AND SERVICE
@@ -449,19 +415,16 @@ export class CardsService {
 
     newReportData.included_tax_service =
       user.shops[0].shop.included_tax_service;
-
     const taxService = new ServiceTax(
       totalPayment,
       user.shops[0].shop.service,
       user.shops[0].shop.tax,
     );
-
     if (!user.shops[0].shop.included_tax_service) {
       newReportData.total_payment_after_tax_service = taxService.calculateTax();
     } else {
       newReportData.total_payment_after_tax_service = totalPayment;
     }
-
     newReportData.tax_percent = taxService.taxPercent;
     newReportData.service_percent = taxService.servicePercent;
     newReportData.total_tax = taxService.getTax();
@@ -481,7 +444,6 @@ export class CardsService {
         throw new BadRequestException(
           'Card Balance cannot be less than minimal balance',
         );
-
       if (balance < 0)
         throw new BadRequestException('Card Balance cannot be less than zero');
 
@@ -506,6 +468,7 @@ export class CardsService {
         }),
         this.prisma.report.create({
           data: newReportData,
+          include: { Item: true },
         }),
       ]);
 

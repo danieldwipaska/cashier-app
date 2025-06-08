@@ -4,6 +4,7 @@ import Response from 'src/interfaces/response.interface';
 import { PrismaService } from 'src/prisma.service';
 import { UsersService } from 'src/users/users.service';
 import { UpdateCrewDto } from './dto/update-crew.dto';
+import { CreateCrewDto } from './dto/create-crew.dto';
 
 @Injectable()
 export class CrewsService {
@@ -12,7 +13,7 @@ export class CrewsService {
     private usersService: UsersService,
   ) {}
   async create(
-    data: any,
+    createCrewDto: CreateCrewDto,
     username: string,
     shop_id: string,
   ): Promise<Response<Crew>> {
@@ -23,7 +24,7 @@ export class CrewsService {
 
       const crew = await this.prisma.crew.create({
         data: {
-          ...data,
+          ...createCrewDto,
           shop_id,
         },
       });
@@ -59,10 +60,9 @@ export class CrewsService {
 
   async findOne(request: any, id: string): Promise<Response<Crew>> {
     try {
-      const crew = await this.prisma.crew.findUnique({
+      const crew = await this.prisma.crew.findFirst({
         where: {
-          id,
-          shop_id: request.shop.id,
+          AND: [{ id }, { shop_id: request.shop.id }],
         },
       });
       if (!crew) throw new NotFoundException('Crew Not Found');

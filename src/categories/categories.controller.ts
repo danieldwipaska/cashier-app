@@ -8,6 +8,7 @@ import {
   Delete,
   UseGuards,
   Req,
+  ValidationPipe,
 } from '@nestjs/common';
 import { CategoriesService } from './categories.service';
 import { AuthGuard, ShopGuard } from 'src/auth/auth.guard';
@@ -22,7 +23,7 @@ export class CategoriesController {
   @Post()
   create(
     @Req() request: Request,
-    @Body() createCategoryDto: CreateCategoryDto,
+    @Body(new ValidationPipe()) createCategoryDto: CreateCategoryDto,
   ) {
     return this.categoriesService.create(request, createCategoryDto);
   }
@@ -44,7 +45,7 @@ export class CategoriesController {
   update(
     @Req() request: Request,
     @Param('id') id: string,
-    @Body() updateCategoryDto: UpdateCategoryDto,
+    @Body(new ValidationPipe()) updateCategoryDto: UpdateCategoryDto,
   ) {
     return this.categoriesService.update(request, id, updateCategoryDto);
   }

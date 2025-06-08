@@ -12,6 +12,7 @@ import {
   ParseBoolPipe,
   UseGuards,
   Req,
+  ValidationPipe,
 } from '@nestjs/common';
 import { FnbsService } from './fnbs.service';
 import { Prisma } from '@prisma/client';
@@ -24,7 +25,10 @@ export class FnbsController {
 
   @UseGuards(AuthGuard, ShopGuard)
   @Post()
-  create(@Req() request: Request, @Body() data: CreateFnbDto) {
+  create(
+    @Req() request: Request,
+    @Body(new ValidationPipe()) data: CreateFnbDto,
+  ) {
     return this.fnbsService.create(request, data);
   }
 

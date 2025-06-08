@@ -13,12 +13,15 @@ import {
   UseGuards,
   ParseBoolPipe,
   Req,
+  ValidationPipe,
 } from '@nestjs/common';
 import { ReportsService } from './reports.service';
-import { Prisma } from '@prisma/client';
 import { CreateReportDto } from './dto/create-report.dto';
 import { AuthGuard, ShopGuard } from 'src/auth/auth.guard';
-import { UpdateReportDto } from './dto/update-report.dto';
+import {
+  UpdateRefundedItemDto,
+  UpdateReportDto,
+} from './dto/update-report.dto';
 import { ReportStatus, ReportType } from 'src/enums/report';
 
 @Controller('reports')
@@ -27,7 +30,10 @@ export class ReportsController {
 
   @UseGuards(AuthGuard, ShopGuard)
   @Post()
-  create(@Body() createReportDto: CreateReportDto, @Request() req) {
+  create(
+    @Body(new ValidationPipe()) createReportDto: CreateReportDto,
+    @Request() req,
+  ) {
     return this.reportsService.create(createReportDto, req);
   }
 
@@ -40,7 +46,7 @@ export class ReportsController {
     @Query('status') status: ReportStatus,
     @Query('customer_name') customer_name: string,
     @Query('customer_id') customer_id: string,
-    @Query('served_by') served_by: string,
+    @Query('crew_id') crew_id: string,
     @Query('type') type: ReportType | ReportType[],
     @Query('page', new DefaultValuePipe(1), ParseIntPipe) page: number,
     @Query('pagination', new DefaultValuePipe(true), ParseBoolPipe)
@@ -54,7 +60,7 @@ export class ReportsController {
         status,
         customer_name,
         customer_id,
-        served_by,
+        crew_id,
         type,
         shop_id: '',
       },
@@ -87,7 +93,7 @@ export class ReportsController {
   @Patch(':id')
   update(
     @Param('id') id: string,
-    @Body() data: UpdateReportDto,
+    @Body(new ValidationPipe()) data: UpdateReportDto,
     @Request() req,
   ) {
     return this.reportsService.update(id, data, req);
@@ -98,9 +104,9 @@ export class ReportsController {
   refundPartially(
     @Req() request: Request,
     @Param('id') id: string,
-    @Body() data: Prisma.ReportUpdateInput,
+    @Body() refundedItems: UpdateRefundedItemDto,
   ) {
-    return this.reportsService.refundPartially(request, id, data);
+    return this.reportsService.refundPartially(request, id, refundedItems);
   }
 
   @UseGuards(AuthGuard, ShopGuard)

@@ -1,6 +1,4 @@
 import {
-  ArrayMaxSize,
-  ArrayMinSize,
   IsArray,
   IsEnum,
   IsNotEmpty,
@@ -8,12 +6,37 @@ import {
   IsOptional,
   IsString,
   IsUUID,
-  Max,
   MaxLength,
   Min,
   MinLength,
+  ValidateNested,
 } from 'class-validator';
+import { Type } from 'class-transformer';
 import { ReportStatus, ReportType } from 'src/enums/report';
+
+export class ItemDto {
+  @IsUUID(4, { message: 'Fnb ID must be a valid UUID' })
+  @IsNotEmpty()
+  readonly fnb_id: string;
+
+  @IsNumber()
+  @Min(1)
+  readonly amount: number;
+
+  @IsNumber()
+  @Min(0)
+  @IsOptional()
+  readonly refunded_amount?: number;
+
+  @IsNumber()
+  @Min(0)
+  @IsOptional()
+  readonly discount_percent?: number;
+
+  @IsNumber()
+  @Min(0)
+  readonly price: number;
+}
 
 export class CreateReportDto {
   @IsString()
@@ -35,21 +58,7 @@ export class CreateReportDto {
   @MinLength(2, {
     message: 'Payment method cannot be shorter than 2 characters',
   })
-  readonly payment_method: string;
-
-  @IsArray()
-  @ArrayMinSize(1, { message: 'Order ID cannot be empty' })
-  @ArrayMaxSize(50, { message: 'Order ID cannot be more than 50' })
-  @IsUUID(4, { each: true, message: 'Order ID must be a valid UUID' })
-  readonly order_id: string[];
-
-  @IsArray()
-  @ArrayMinSize(1, { message: 'Order amount cannot be empty' })
-  @ArrayMaxSize(50, { message: 'Order amount cannot be more than 50' })
-  @IsNumber({}, { each: true })
-  @Min(0, { each: true, message: 'Order amount must be a positive number' })
-  @Max(100, { each: true, message: 'Order amount must be less than 100' })
-  readonly order_amount: number[];
+  readonly method_id: string;
 
   @IsUUID(4, { message: 'Crew ID must be a valid UUID' })
   @IsNotEmpty()
@@ -64,6 +73,11 @@ export class CreateReportDto {
   @IsOptional()
   @MaxLength(255, { message: 'Note cannot be longer than 255 characters' })
   readonly note: string;
+
+  @IsArray()
+  @ValidateNested({ each: true })
+  @Type(() => ItemDto)
+  readonly items: ItemDto[];
 }
 
 export class CreateReportWithCardDto extends CreateReportDto {
