@@ -90,6 +90,6 @@ export class RefundedItemDto {
 export class UpdateRefundedItemDto {
   @IsArray()
   @ValidateNested({ each: true })
-  @Type(() => ItemDto)
+  @Type(() => RefundedItemDto)
   readonly items: RefundedItemDto[];
 }

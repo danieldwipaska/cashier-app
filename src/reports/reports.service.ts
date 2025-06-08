@@ -299,7 +299,7 @@ export class ReportsService {
       const shop = await this.prisma.shop.findUnique({
         where: { id: req.shop.id },
       });
-      if (!shop) throw new NotFoundException('User Not Found');
+      if (!shop) throw new NotFoundException('Shop Not Found');
 
       reportData.included_tax_service = shop.included_tax_service;
 

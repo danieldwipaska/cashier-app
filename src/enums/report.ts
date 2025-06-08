@@ -4,7 +4,6 @@ export enum ReportType {
   PAY = 'PAY',
   CHECKOUT = 'CHECKOUT',
   ADJUSTMENT = 'ADJUSTMENT',
-  REFUND = 'REFUND',
 }
 
 export enum ReportStatus {
