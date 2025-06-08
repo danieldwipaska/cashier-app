@@ -1,90 +1,17 @@
-/*
-  Warnings:
+-- CreateEnum
+CREATE TYPE "ReportType" AS ENUM ('PAY', 'TOPUP_AND_ACTIVATE', 'TOPUP', 'ADJUSTMENT', 'CHECKOUT');
 
-  - You are about to drop the `BackofficeSetting` table. If the table is not empty, all the data it contains will be lost.
-  - You are about to drop the `Card` table. If the table is not empty, all the data it contains will be lost.
-  - You are about to drop the `Category` table. If the table is not empty, all the data it contains will be lost.
-  - You are about to drop the `Crew` table. If the table is not empty, all the data it contains will be lost.
-  - You are about to drop the `CrewPurchaseCategory` table. If the table is not empty, all the data it contains will be lost.
-  - You are about to drop the `Fnbs` table. If the table is not empty, all the data it contains will be lost.
-  - You are about to drop the `Method` table. If the table is not empty, all the data it contains will be lost.
-  - You are about to drop the `Report` table. If the table is not empty, all the data it contains will be lost.
-  - You are about to drop the `Shop` table. If the table is not empty, all the data it contains will be lost.
-  - You are about to drop the `User` table. If the table is not empty, all the data it contains will be lost.
-  - You are about to drop the `UsersOnShops` table. If the table is not empty, all the data it contains will be lost.
+-- CreateEnum
+CREATE TYPE "ReportStatus" AS ENUM ('PAID', 'UNPAID', 'CANCELLED');
 
-*/
+-- CreateEnum
+CREATE TYPE "Role" AS ENUM ('ADMIN', 'MANAGER', 'GREETER', 'SERVER');
+
+-- CreateEnum
+CREATE TYPE "Position" AS ENUM ('SERVER', 'BARTENDER', 'GREETER');
+
 -- CreateEnum
 CREATE TYPE "CardStatus" AS ENUM ('ACTIVE', 'INACTIVE', 'BLOCKED', 'EXPIRED');
-
--- DropForeignKey
-ALTER TABLE "BackofficeSetting" DROP CONSTRAINT "BackofficeSetting_shop_id_fkey";
-
--- DropForeignKey
-ALTER TABLE "Card" DROP CONSTRAINT "Card_shop_id_fkey";
-
--- DropForeignKey
-ALTER TABLE "Category" DROP CONSTRAINT "Category_shop_id_fkey";
-
--- DropForeignKey
-ALTER TABLE "Crew" DROP CONSTRAINT "Crew_shop_id_fkey";
-
--- DropForeignKey
-ALTER TABLE "CrewPurchaseCategory" DROP CONSTRAINT "CrewPurchaseCategory_backoffice_setting_id_fkey";
-
--- DropForeignKey
-ALTER TABLE "CrewPurchaseCategory" DROP CONSTRAINT "CrewPurchaseCategory_category_id_fkey";
-
--- DropForeignKey
-ALTER TABLE "Fnbs" DROP CONSTRAINT "Fnbs_category_id_fkey";
-
--- DropForeignKey
-ALTER TABLE "Fnbs" DROP CONSTRAINT "Fnbs_shop_id_fkey";
-
--- DropForeignKey
-ALTER TABLE "Method" DROP CONSTRAINT "Method_shop_id_fkey";
-
--- DropForeignKey
-ALTER TABLE "Report" DROP CONSTRAINT "Report_shop_id_fkey";
-
--- DropForeignKey
-ALTER TABLE "UsersOnShops" DROP CONSTRAINT "UsersOnShops_shop_id_fkey";
-
--- DropForeignKey
-ALTER TABLE "UsersOnShops" DROP CONSTRAINT "UsersOnShops_user_id_fkey";
-
--- DropTable
-DROP TABLE "BackofficeSetting";
-
--- DropTable
-DROP TABLE "Card";
-
--- DropTable
-DROP TABLE "Category";
-
--- DropTable
-DROP TABLE "Crew";
-
--- DropTable
-DROP TABLE "CrewPurchaseCategory";
-
--- DropTable
-DROP TABLE "Fnbs";
-
--- DropTable
-DROP TABLE "Method";
-
--- DropTable
-DROP TABLE "Report";
-
--- DropTable
-DROP TABLE "Shop";
-
--- DropTable
-DROP TABLE "User";
-
--- DropTable
-DROP TABLE "UsersOnShops";
 
 -- CreateTable
 CREATE TABLE "users" (
@@ -193,13 +120,11 @@ CREATE TABLE "reports" (
     "total_tax" DOUBLE PRECISION NOT NULL DEFAULT 0,
     "note" TEXT NOT NULL DEFAULT '',
     "is_deleted" BOOLEAN NOT NULL DEFAULT false,
-    "refund_status" BOOLEAN NOT NULL DEFAULT false,
-    "refund_target_id" TEXT NOT NULL DEFAULT '',
     "created_at" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "updated_at" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "shop_id" TEXT NOT NULL,
     "crew_id" TEXT NOT NULL,
-    "method_id" TEXT NOT NULL,
+    "method_id" TEXT,
 
     CONSTRAINT "reports_pkey" PRIMARY KEY ("id")
 );
@@ -305,7 +230,7 @@ ALTER TABLE "fnbs" ADD CONSTRAINT "fnbs_shop_id_fkey" FOREIGN KEY ("shop_id") RE
 ALTER TABLE "items" ADD CONSTRAINT "items_fnb_id_fkey" FOREIGN KEY ("fnb_id") REFERENCES "fnbs"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
 
 -- AddForeignKey
-ALTER TABLE "items" ADD CONSTRAINT "items_report_id_fkey" FOREIGN KEY ("report_id") REFERENCES "reports"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
+ALTER TABLE "items" ADD CONSTRAINT "items_report_id_fkey" FOREIGN KEY ("report_id") REFERENCES "reports"("id") ON DELETE CASCADE ON UPDATE CASCADE;
 
 -- AddForeignKey
 ALTER TABLE "reports" ADD CONSTRAINT "reports_shop_id_fkey" FOREIGN KEY ("shop_id") REFERENCES "shops"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
@@ -314,7 +239,7 @@ ALTER TABLE "reports" ADD CONSTRAINT "reports_shop_id_fkey" FOREIGN KEY ("shop_i
 ALTER TABLE "reports" ADD CONSTRAINT "reports_crew_id_fkey" FOREIGN KEY ("crew_id") REFERENCES "crews"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
 
 -- AddForeignKey
-ALTER TABLE "reports" ADD CONSTRAINT "reports_method_id_fkey" FOREIGN KEY ("method_id") REFERENCES "methods"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
+ALTER TABLE "reports" ADD CONSTRAINT "reports_method_id_fkey" FOREIGN KEY ("method_id") REFERENCES "methods"("id") ON DELETE SET NULL ON UPDATE CASCADE;
 
 -- AddForeignKey
 ALTER TABLE "cards" ADD CONSTRAINT "cards_shop_id_fkey" FOREIGN KEY ("shop_id") REFERENCES "shops"("id") ON DELETE RESTRICT ON UPDATE CASCADE;

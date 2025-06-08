@@ -115,7 +115,7 @@ model Item {
   created_at       DateTime @default(now())
   updated_at       DateTime @default(now()) @updatedAt
 
-  report    Report @relation(fields: [report_id], references: [id])
+  report    Report @relation(fields: [report_id], references: [id], onDelete: Cascade)
   report_id String
 
   @@map("items")
