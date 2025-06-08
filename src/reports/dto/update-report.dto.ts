@@ -1,6 +1,4 @@
 import {
-  ArrayMaxSize,
-  ArrayMinSize,
   IsArray,
   IsEnum,
   IsNotEmpty,
@@ -8,7 +6,6 @@ import {
   IsOptional,
   IsString,
   IsUUID,
-  Max,
   MaxLength,
   Min,
   MinLength,
@@ -59,20 +56,6 @@ export class UpdateReportDto {
   })
   readonly method_id: string;
 
-  @IsArray()
-  @ArrayMinSize(1, { message: 'Order ID cannot be empty' })
-  @ArrayMaxSize(50, { message: 'Order ID cannot be more than 50' })
-  @IsUUID(4, { each: true, message: 'Order ID must be a valid UUID' })
-  readonly order_id: string[];
-
-  @IsArray()
-  @ArrayMinSize(1, { message: 'Order ID cannot be empty' })
-  @ArrayMaxSize(50, { message: 'Order ID cannot be more than 50' })
-  @IsNumber({}, { each: true })
-  @Min(0, { each: true, message: 'Order ID must be a positive number' })
-  @Max(100, { each: true, message: 'Order ID must be less than 100' })
-  readonly order_amount: number[];
-
   @IsUUID(4, { message: 'Crew ID must be a valid UUID' })
   @IsNotEmpty()
   readonly crew_id: string;
@@ -91,4 +74,22 @@ export class UpdateReportDto {
   @ValidateNested({ each: true })
   @Type(() => ItemDto)
   readonly items: ItemDto[];
+}
+
+export class RefundedItemDto {
+  @IsUUID(4, { message: 'Fnb ID must be a valid UUID' })
+  @IsNotEmpty()
+  readonly id: string;
+
+  @IsNumber()
+  @Min(0)
+  @IsOptional()
+  readonly added_refunded_amount?: number;
+}
+
+export class UpdateRefundedItemDto {
+  @IsArray()
+  @ValidateNested({ each: true })
+  @Type(() => ItemDto)
+  readonly items: RefundedItemDto[];
 }

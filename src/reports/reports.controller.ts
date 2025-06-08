@@ -18,7 +18,10 @@ import {
 import { ReportsService } from './reports.service';
 import { CreateReportDto } from './dto/create-report.dto';
 import { AuthGuard, ShopGuard } from 'src/auth/auth.guard';
-import { UpdateReportDto } from './dto/update-report.dto';
+import {
+  UpdateRefundedItemDto,
+  UpdateReportDto,
+} from './dto/update-report.dto';
 import { ReportStatus, ReportType } from 'src/enums/report';
 
 @Controller('reports')
@@ -101,9 +104,9 @@ export class ReportsController {
   refundPartially(
     @Req() request: Request,
     @Param('id') id: string,
-    @Body() updateReportDto: UpdateReportDto,
+    @Body() refundedItems: UpdateRefundedItemDto,
   ) {
-    return this.reportsService.refundPartially(request, id, updateReportDto);
+    return this.reportsService.refundPartially(request, id, refundedItems);
   }
 
   @UseGuards(AuthGuard, ShopGuard)

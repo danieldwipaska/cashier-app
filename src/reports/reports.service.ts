@@ -7,7 +7,10 @@ import Randomize from 'src/utils/randomize.util';
 import { ReportStatus, ReportType } from 'src/enums/report';
 import { orderDiscountedPrice, ServiceTax } from 'src/utils/calculation.util';
 import { CreateReportDto } from './dto/create-report.dto';
-import { UpdateReportDto } from './dto/update-report.dto';
+import {
+  UpdateRefundedItemDto,
+  UpdateReportDto,
+} from './dto/update-report.dto';
 
 @Injectable()
 export class ReportsService {
@@ -145,6 +148,19 @@ export class ReportsService {
           where: filter,
           take,
           skip: skip || 0,
+          include: {
+            Item: {
+              include: {
+                fnb: {
+                  select: {
+                    name: true,
+                  },
+                },
+              },
+            },
+            crew: true,
+            method: true,
+          },
         }),
         this.prisma.report.count({
           where: filter,
@@ -198,6 +214,19 @@ export class ReportsService {
         where: {
           id,
           shop_id: request.shop.id,
+        },
+        include: {
+          Item: {
+            include: {
+              fnb: {
+                select: {
+                  name: true,
+                },
+              },
+            },
+          },
+          crew: true,
+          method: true,
         },
       });
       if (!report) throw new NotFoundException('Report Not Found');
@@ -326,9 +355,9 @@ export class ReportsService {
   async refundPartially(
     request: any,
     id: string,
-    updateReportDto: UpdateReportDto,
+    updateRefundedItemDto: UpdateRefundedItemDto,
   ): Promise<Response<Report>> {
-    const { items } = updateReportDto;
+    const { items } = updateRefundedItemDto;
     try {
       const report = await this.prisma.report.findUnique({
         where: {
@@ -339,114 +368,19 @@ export class ReportsService {
       });
       if (!report) throw new NotFoundException('Report Not Found');
 
-      // Calculate refund based on items
-      let total_payment = 0;
-      for (const item of items) {
-        const originalItem = report.Item.find((i) => i.fnb_id === item.fnb_id);
-        if (!originalItem) continue;
-        const refundAmount = item.refunded_amount || 0;
-        total_payment += orderDiscountedPrice({
-          price: originalItem.price,
-          amount: refundAmount,
-          discountPercent: originalItem.discount_percent || 0,
-        });
-      }
-
-      let total_payment_after_tax_service = 0;
-      const taxService = new ServiceTax(
-        total_payment,
-        report.service_percent,
-        report.tax_percent,
-      );
-      if (!report.included_tax_service) {
-        total_payment_after_tax_service = taxService.calculateTax();
-      } else {
-        total_payment_after_tax_service = taxService.totalPayment;
-      }
-      const total_tax = taxService.getTax();
-
       // Update refunded_amount for each item
       for (const item of items) {
         await this.prisma.item.updateMany({
-          where: { report_id: id, fnb_id: item.fnb_id },
-          data: { refunded_amount: item.refunded_amount || 0 },
+          where: { report_id: id, id: item.id },
+          data: {
+            refunded_amount: {
+              increment: item.added_refunded_amount,
+            },
+          },
         });
       }
 
-      if (report.card_number) {
-        await this.prisma.$transaction([
-          this.prisma.report.update({
-            where: { id, shop_id: request.shop.id },
-            data: { refund_status: true },
-          }),
-          this.prisma.report.create({
-            data: {
-              report_id: Randomize.generateReportId('REFUND', 6),
-              type: ReportType.REFUND,
-              status: ReportStatus.PAID,
-              customer_name: report.customer_name,
-              customer_id: report.customer_id,
-              card_number: report.card_number,
-              initial_balance: report.initial_balance,
-              final_balance: report.final_balance,
-              total_payment: -total_payment,
-              included_tax_service: report.included_tax_service,
-              total_payment_after_tax_service: -total_payment_after_tax_service,
-              tax_percent: report.tax_percent,
-              service_percent: report.service_percent,
-              total_tax: total_tax,
-              note: report.note,
-              is_deleted: false,
-              refund_status: true,
-              refund_target_id: report.id,
-              shop_id: report.shop_id,
-              crew_id: report.crew_id,
-              method_id: report.method_id,
-            },
-          }),
-          this.prisma.card.update({
-            where: {
-              card_number: report.card_number,
-              shop_id: request.shop.id,
-            },
-            data: { balance: { increment: total_payment_after_tax_service } },
-          }),
-        ]);
-        return { statusCode: 200, message: 'OK' };
-      } else {
-        await this.prisma.$transaction([
-          this.prisma.report.update({
-            where: { id },
-            data: { refund_status: true },
-          }),
-          this.prisma.report.create({
-            data: {
-              report_id: Randomize.generateReportId('REFUND', 6),
-              type: ReportType.REFUND,
-              status: ReportStatus.PAID,
-              customer_name: report.customer_name,
-              customer_id: report.customer_id,
-              card_number: report.card_number,
-              initial_balance: report.initial_balance,
-              final_balance: report.final_balance,
-              total_payment: -total_payment,
-              included_tax_service: report.included_tax_service,
-              total_payment_after_tax_service: -total_payment_after_tax_service,
-              tax_percent: report.tax_percent,
-              service_percent: report.service_percent,
-              total_tax: total_tax,
-              note: report.note,
-              is_deleted: false,
-              refund_status: true,
-              refund_target_id: report.id,
-              shop_id: report.shop_id,
-              crew_id: report.crew_id,
-              method_id: report.method_id,
-            },
-          }),
-        ]);
-        return { statusCode: 200, message: 'OK' };
-      }
+      return { statusCode: 200, message: 'OK' };
     } catch (error) {
       throw error;
     }
@@ -464,6 +398,8 @@ export class ReportsService {
           status: ReportStatus.CANCELLED,
         },
       });
+
+      console.log(report);
 
       return {
         statusCode: 200,

@@ -57,7 +57,7 @@ export class CardsController {
     @Body('customerName') customerName: string,
     @Body('customerId') customerId: string,
     @Body('addBalance') addBalance: string,
-    @Body('paymentMethod') paymentMethod: string,
+    @Body('paymentMethodId') paymentMethodId: string,
     @Body('note') note: string,
     @Req() req: Request,
   ) {
@@ -66,7 +66,7 @@ export class CardsController {
       customerName,
       customerId,
       +addBalance,
-      paymentMethod,
+      paymentMethodId,
       note,
       req,
     );

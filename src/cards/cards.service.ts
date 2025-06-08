@@ -377,7 +377,6 @@ export class CardsService {
       method_id,
       note: note || '',
       total_payment: 0,
-      served_by: '',
       shop_id: req.shop.id,
       Item: {
         create: items.map((item) => ({
@@ -389,15 +388,6 @@ export class CardsService {
         })),
       },
     };
-
-    try {
-      const crew = await this.crewsService.findOne(req, crew_id);
-      if (!crew) throw new NotFoundException('Crew Not Found');
-      newReportData.served_by = crew.data.name;
-      newReportData.collected_by = crew.data.name;
-    } catch (error) {
-      throw error;
-    }
 
     // CALCULATE TOTAL PAYMENT
     let totalPayment = 0;

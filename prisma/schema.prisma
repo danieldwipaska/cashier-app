@@ -139,15 +139,13 @@ model Report {
   total_tax                       Float        @default(0)
   note                            String       @default("")
   is_deleted                      Boolean      @default(false)
-  refund_status                   Boolean      @default(false)
-  refund_target_id                String       @default("")
   created_at                      DateTime     @default(now())
   updated_at                      DateTime     @default(now()) @updatedAt
   shop                            Shop         @relation(fields: [shop_id], references: [id])
   shop_id                         String
   crew                            Crew         @relation(fields: [crew_id], references: [id])
   crew_id                         String
-  method                          Method?       @relation(fields: [method_id], references: [id])
+  method                          Method?      @relation(fields: [method_id], references: [id])
   method_id                       String?
 
   Item Item[]
@@ -214,7 +212,6 @@ model Method {
 
 enum ReportType {
   PAY
-  REFUND
   TOPUP_AND_ACTIVATE
   TOPUP
   ADJUSTMENT
