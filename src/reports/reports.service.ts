@@ -317,17 +317,19 @@ export class ReportsService {
 
       try {
         // Remove old items and add new ones
-        await this.prisma.item.deleteMany({ where: { report_id: id } });
-        await this.prisma.item.createMany({
-          data: items.map((item) => ({
-            report_id: id,
-            fnb_id: item.fnb_id,
-            amount: item.amount,
-            refunded_amount: item.refunded_amount || 0,
-            discount_percent: item.discount_percent || 0,
-            price: item.price,
-          })),
-        });
+        await this.prisma.$transaction([
+          this.prisma.item.deleteMany({ where: { report_id: id } }),
+          this.prisma.item.createMany({
+            data: items.map((item) => ({
+              report_id: id,
+              fnb_id: item.fnb_id,
+              amount: item.amount,
+              refunded_amount: item.refunded_amount || 0,
+              discount_percent: item.discount_percent || 0,
+              price: item.price,
+            })),
+          }),
+        ]);
 
         const report = await this.prisma.report.update({
           where: {
