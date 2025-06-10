@@ -11,12 +11,15 @@ import {
   UpdateRefundedItemDto,
   UpdateReportDto,
 } from './dto/update-report.dto';
+import { HttpService } from '@nestjs/axios';
+import { firstValueFrom } from 'rxjs';
 
 @Injectable()
 export class ReportsService {
   constructor(
     private prisma: PrismaService,
     private crewsService: CrewsService,
+    private readonly httpService: HttpService,
   ) {}
 
   async create(
@@ -236,6 +239,78 @@ export class ReportsService {
         message: 'OK',
         data: report,
       };
+    } catch (error) {
+      console.log(error);
+      throw error;
+    }
+  }
+
+  async printReceipt(request: any, id: string): Promise<Response<any>> {
+    try {
+      const report = await this.prisma.report.findUnique({
+        where: {
+          id,
+          shop_id: request.shop.id,
+        },
+        include: {
+          Item: {
+            include: {
+              fnb: {
+                select: {
+                  name: true,
+                },
+              },
+            },
+          },
+          crew: true,
+          method: true,
+        },
+      });
+      if (!report) throw new NotFoundException('Receipt not found');
+
+      const receiptData = {
+        storeName: 'Bahari Irish Pub',
+        address: 'Jl. Kawi No.8A, Kota Malang, 65119',
+        date: report.created_at,
+        receiptNumber: report.report_id,
+        servedBy: report.crew.name,
+        customerName: report.customer_name,
+        items: report.Item.map((item) => {
+          return {
+            name: item.fnb.name,
+            quantity: item.amount,
+            price: item.price,
+            discountPercent: item.discount_percent,
+            discountedPrice: orderDiscountedPrice({
+              price: item.price,
+              amount: item.amount,
+              discountPercent: item.discount_percent,
+            }),
+          };
+        }),
+        includedTaxService: report.included_tax_service,
+        taxPercent: report.tax_percent,
+        servicePercent: report.service_percent,
+        subtotal: report.total_payment,
+        total: report.total_payment_after_tax_service,
+      };
+
+      try {
+        const url = `${process.env.BAHARI_RECEIPT_PRINTING_BASE_URL}/print`;
+        await firstValueFrom(
+          this.httpService.post(url, {
+            data: receiptData,
+          }),
+        );
+
+        return {
+          statusCode: 200,
+          message: 'OK',
+        };
+      } catch (error) {
+        console.log(error);
+        throw error;
+      }
     } catch (error) {
       console.log(error);
       throw error;

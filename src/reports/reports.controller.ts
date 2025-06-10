@@ -76,6 +76,12 @@ export class ReportsController {
   }
 
   @UseGuards(AuthGuard, ShopGuard)
+  @Get(':id/print')
+  printReceipt(@Req() request: Request, @Param('id') id: string) {
+    return this.reportsService.printReceipt(request, id);
+  }
+
+  @UseGuards(AuthGuard, ShopGuard)
   @Get('transactions/:cardNumber')
   findAllByCardNumberAndCustomerId(
     @Req() request: Request,
