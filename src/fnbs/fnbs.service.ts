@@ -5,10 +5,14 @@ import { Fnbs, Prisma } from '@prisma/client';
 import { PageMetaData } from 'src/interfaces/pagination.interface';
 import { countSkip, paginate } from 'src/utils/pagination.util';
 import { CreateFnbDto } from './dto/create-fnb.dto';
+import { CustomLoggerService } from 'src/loggers/custom-logger.service';
 
 @Injectable()
 export class FnbsService {
-  constructor(private prisma: PrismaService) {}
+  constructor(
+    private prisma: PrismaService,
+    private readonly logger: CustomLoggerService,
+  ) {}
 
   async create(request: any, data: CreateFnbDto): Promise<Response<Fnbs>> {
     try {
@@ -22,14 +26,32 @@ export class FnbsService {
         },
       });
 
+      this.logger.logBusinessEvent(
+        `New product created: ${newFnb.name}`,
+        'PRODUCT_CREATED',
+        'PRODUCT',
+        newFnb.id,
+        request.user?.username,
+        null,
+        {
+          ...data,
+          shop_id: request.shop.id,
+        },
+      );
+
       return {
         statusCode: 201,
         message: 'OK',
         data: newFnb,
       };
     } catch (error) {
-      console.log(error);
-      throw error;
+      this.logger.logError(
+        error,
+        'FnbsService.create',
+        request.user?.username,
+        request.requestId,
+        data,
+      );
     }
   }
 
@@ -109,7 +131,18 @@ export class FnbsService {
     data: Prisma.FnbsUpdateInput,
   ): Promise<Response<Fnbs>> {
     try {
-      const fnb = await this.prisma.fnbs.update({
+      const fnb = await this.prisma.fnbs.findUnique({
+        where: {
+          id,
+          shop_id: request.shop.id,
+        },
+        include: {
+          category: true,
+        },
+      });
+      if (!fnb) throw new NotFoundException('Fnb Not Found');
+
+      const updatedFnb = await this.prisma.fnbs.update({
         where: {
           id,
           shop_id: request.shop.id,
@@ -117,16 +150,30 @@ export class FnbsService {
         include: { category: true },
         data,
       });
-      if (!fnb) throw new NotFoundException('Fnb Not Found');
+
+      this.logger.logBusinessEvent(
+        `Product updated: ${updatedFnb.name}`,
+        'PRODUCT_UPDATED',
+        'PRODUCT',
+        updatedFnb.id,
+        request.user?.username,
+        fnb,
+        updatedFnb,
+      );
 
       return {
         statusCode: 200,
         message: 'OK',
-        data: fnb,
+        data: updatedFnb,
       };
     } catch (error) {
-      console.error(error);
-      throw error;
+      this.logger.logError(
+        error,
+        'FnbsService.update',
+        request.user?.username,
+        request.requestId,
+        data,
+      );
     }
   }
 
@@ -143,18 +190,40 @@ export class FnbsService {
       try {
         const deletedFnb = await this.prisma.fnbs.delete({ where: { id } });
 
+        this.logger.logBusinessEvent(
+          `Product removed: ${deletedFnb.name}`,
+          'PRODUCT_DELETED',
+          'PRODUCT',
+          deletedFnb.id,
+          request.user?.username,
+          fnb,
+          deletedFnb,
+        );
+
         return {
           statusCode: 200,
           message: 'OK',
           data: deletedFnb,
         };
       } catch (error) {
-        console.log(error);
-        throw error;
+        this.logger.logError(
+          error,
+          'FnbsService.remove',
+          request.user?.username,
+          request.requestId,
+          fnb,
+        );
       }
     } catch (error) {
-      console.log(error);
-      throw error;
+      this.logger.logError(
+        error,
+        'FnbsService.remove',
+        request.user?.username,
+        request.requestId,
+        {
+          id,
+        },
+      );
     }
   }
 }

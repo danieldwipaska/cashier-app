@@ -1,4 +1,4 @@
-import { Module } from '@nestjs/common';
+import { MiddlewareConsumer, Module } from '@nestjs/common';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
 import { FnbsModule } from './fnbs/fnbs.module';
@@ -15,6 +15,8 @@ import { MethodsModule } from './methods/methods.module';
 import { BackofficeSettingsModule } from './backoffice-settings/backoffice-settings.module';
 import { CrewPurchaseCategoryModule } from './crew-purchase-category/crew-purchase-category.module';
 import { UserOnShopsModule } from './user-on-shops/user-on-shops.module';
+import { LoggerModule } from './loggers/logger.module';
+import { LoggingMiddleware } from './middlewares/logging.middleware';
 
 @Module({
   imports: [
@@ -32,8 +34,13 @@ import { UserOnShopsModule } from './user-on-shops/user-on-shops.module';
     BackofficeSettingsModule,
     CrewPurchaseCategoryModule,
     UserOnShopsModule,
+    LoggerModule,
   ],
   controllers: [AppController],
   providers: [AppService],
 })
-export class AppModule {}
+export class AppModule {
+  configure(consumer: MiddlewareConsumer) {
+    consumer.apply(LoggingMiddleware).forRoutes('*'); // Terapkan middleware ke semua rute
+  }
+}

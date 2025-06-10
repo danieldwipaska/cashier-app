@@ -9,10 +9,14 @@ import { PrismaService } from 'src/prisma.service';
 import { Category } from '@prisma/client';
 import { CreateCategoryDto } from './dto/create-category.dto';
 import { UpdateCategoryDto } from './dto/update-category.dto';
+import { CustomLoggerService } from 'src/loggers/custom-logger.service';
 
 @Injectable()
 export class CategoriesService {
-  constructor(private prisma: PrismaService) {}
+  constructor(
+    private prisma: PrismaService,
+    private readonly logger: CustomLoggerService,
+  ) {}
 
   async create(
     request: any,
@@ -25,12 +29,22 @@ export class CategoriesService {
       if (category) throw new BadRequestException('Category Already Exists');
 
       try {
-        const category = await this.prisma.category.create({
+        const newCategory = await this.prisma.category.create({
           data: {
             ...createCategoryDto,
             shop_id: request.shop.id,
           },
         });
+
+        this.logger.logBusinessEvent(
+          `New category created: ${newCategory.name}`,
+          'CATEGORY_CREATED',
+          'CATEGORY',
+          newCategory.id,
+          request.user?.username,
+          null,
+          newCategory,
+        );
 
         return {
           statusCode: 201,
@@ -38,12 +52,27 @@ export class CategoriesService {
           data: category,
         };
       } catch (error) {
-        console.log(error);
-        throw error;
+        this.logger.logError(
+          error,
+          'CategoriesService.create',
+          request.user?.username,
+          request.requestId,
+          {
+            category,
+            createCategoryDto,
+          },
+        );
       }
     } catch (error) {
-      console.log(error);
-      throw error;
+      this.logger.logError(
+        error,
+        'CategoriesService.create',
+        request.user?.username,
+        request.requestId,
+        {
+          createCategoryDto,
+        },
+      );
     }
   }
 
@@ -96,7 +125,15 @@ export class CategoriesService {
     updateCategoryDto: UpdateCategoryDto,
   ): Promise<Response<Category>> {
     try {
-      const category = await this.prisma.category.update({
+      const category = await this.prisma.category.findUnique({
+        where: {
+          id,
+          shop_id: request.shop.id,
+        },
+      });
+      if (!category) throw new NotFoundException('Category Not Found');
+
+      const updatedCategory = await this.prisma.category.update({
         where: {
           id,
           shop_id: request.shop.id,
@@ -106,14 +143,31 @@ export class CategoriesService {
         },
       });
 
+      this.logger.logBusinessEvent(
+        `Category updated: ${updatedCategory.name}`,
+        'CATEGORY_UPDATED',
+        'CATEGORY',
+        updatedCategory.id,
+        request.user?.username,
+        category,
+        updatedCategory,
+      );
+
       return {
         statusCode: 200,
         message: 'OK',
-        data: category,
+        data: updatedCategory,
       };
     } catch (error) {
-      console.log(error);
-      throw error;
+      this.logger.logError(
+        error,
+        'CategoriesService.update',
+        request.user?.username,
+        request.requestId,
+        {
+          updateCategoryDto,
+        },
+      );
     }
   }
 
@@ -132,18 +186,40 @@ export class CategoriesService {
           where: { id },
         });
 
+        this.logger.logBusinessEvent(
+          `Category deleted: ${deletedCategory.name}`,
+          'CATEGORY_DELETED',
+          'CATEGORY',
+          deletedCategory.id,
+          request.user?.username,
+          category,
+          deletedCategory,
+        );
+
         return {
           statusCode: 200,
           message: 'OK',
           data: deletedCategory,
         };
       } catch (error) {
-        console.log(error);
-        throw error;
+        this.logger.logError(
+          error,
+          'CategoriesService.remove',
+          request.user?.username,
+          request.requestId,
+          category,
+        );
       }
     } catch (error) {
-      console.log(error);
-      throw error;
+      this.logger.logError(
+        error,
+        'CategoriesService.remove',
+        request.user?.username,
+        request.requestId,
+        {
+          id,
+        },
+      );
     }
   }
 }
