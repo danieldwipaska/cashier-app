@@ -77,8 +77,12 @@ export class ReportsController {
 
   @UseGuards(AuthGuard, ShopGuard)
   @Get(':id/print')
-  printReceipt(@Req() request: Request, @Param('id') id: string) {
-    return this.reportsService.printReceipt(request, id);
+  printReceipt(
+    @Req() request: Request,
+    @Param('id') id: string,
+    @Query('is_checker') is_checker: boolean,
+  ) {
+    return this.reportsService.printReceipt(request, id, is_checker);
   }
 
   @UseGuards(AuthGuard, ShopGuard)

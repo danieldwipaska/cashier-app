@@ -245,7 +245,11 @@ export class ReportsService {
     }
   }
 
-  async printReceipt(request: any, id: string): Promise<Response<any>> {
+  async printReceipt(
+    request: any,
+    id: string,
+    is_checker: boolean,
+  ): Promise<Response<any>> {
     try {
       const report = await this.prisma.report.findUnique({
         where: {
@@ -269,6 +273,7 @@ export class ReportsService {
       if (!report) throw new NotFoundException('Receipt not found');
 
       const receiptData = {
+        receiptType: report.type,
         storeName: 'Bahari Irish Pub',
         address: 'Jl. Kawi No.8A, Kota Malang, 65119',
         date: report.created_at,
@@ -300,6 +305,7 @@ export class ReportsService {
         await firstValueFrom(
           this.httpService.post(url, {
             data: receiptData,
+            isChecker: is_checker,
           }),
         );
 
