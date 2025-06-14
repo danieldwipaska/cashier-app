@@ -143,8 +143,8 @@ model Report {
   updated_at                      DateTime     @default(now()) @updatedAt
   shop                            Shop         @relation(fields: [shop_id], references: [id])
   shop_id                         String
-  crew                            Crew         @relation(fields: [crew_id], references: [id])
-  crew_id                         String
+  crew                            Crew?         @relation(fields: [crew_id], references: [id])
+  crew_id                         String?
   method                          Method?      @relation(fields: [method_id], references: [id])
   method_id                       String?
 

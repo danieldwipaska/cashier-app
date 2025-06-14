@@ -1,5 +1,9 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
-import { Crew } from '@prisma/client';
+import {
+  BadRequestException,
+  Injectable,
+  NotFoundException,
+} from '@nestjs/common';
+import { Crew, Prisma } from '@prisma/client';
 import Response from 'src/interfaces/response.interface';
 import { PrismaService } from 'src/prisma.service';
 import { UsersService } from 'src/users/users.service';
@@ -141,12 +145,18 @@ export class CrewsService {
       if (!crew) throw new NotFoundException('Crew Not Found');
 
       try {
-        const deletedCrew = await this.prisma.crew.delete({
-          where: {
-            id,
-            shop_id: request.shop.id,
-          },
-        });
+        const [, deletedCrew] = await this.prisma.$transaction([
+          this.prisma.report.updateMany({
+            where: { crew_id: crew.id },
+            data: { crew_id: null },
+          }),
+          this.prisma.crew.delete({
+            where: {
+              id,
+              shop_id: request.shop.id,
+            },
+          }),
+        ]);
 
         return {
           statusCode: 200,
@@ -154,6 +164,14 @@ export class CrewsService {
           data: deletedCrew,
         };
       } catch (error) {
+        if (
+          error instanceof Prisma.PrismaClientKnownRequestError &&
+          error.code === 'P2003'
+        ) {
+          throw new BadRequestException(
+            'Crew cannot be deleted because it is still referenced by other data (e.g., reports)',
+          );
+        }
         throw error;
       }
     } catch (error) {

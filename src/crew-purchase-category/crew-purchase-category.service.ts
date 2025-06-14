@@ -3,7 +3,6 @@ import { CreateCrewPurchaseCategoryDto } from './dto/create-crew-purchase-catego
 import { PrismaService } from 'src/prisma.service';
 import { CrewPurchaseCategory } from '@prisma/client';
 import Response from 'src/interfaces/response.interface';
-import { UpdateCrewPurchaseCategoryDto } from './dto/update-crew-purchase-category.dto';
 
 @Injectable()
 export class CrewPurchaseCategoryService {
@@ -30,12 +29,12 @@ export class CrewPurchaseCategoryService {
   }
 
   async findAll(
-    updateCrewPurchaseCategory: UpdateCrewPurchaseCategoryDto,
+    backoffice_setting_id: string,
   ): Promise<Response<CrewPurchaseCategory[]>> {
     try {
       const crewPurchaseCategory =
         await this.prisma.crewPurchaseCategory.findMany({
-          where: updateCrewPurchaseCategory,
+          where: { backoffice_setting_id },
         });
 
       return {

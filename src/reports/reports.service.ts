@@ -155,8 +155,8 @@ export class ReportsService {
             Item: {
               include: {
                 fnb: {
-                  select: {
-                    name: true,
+                  include: {
+                    category: true,
                   },
                 },
               },
@@ -169,6 +169,13 @@ export class ReportsService {
           where: filter,
         }),
       ]);
+
+      if (!reports.length)
+        return {
+          statusCode: 200,
+          message: 'OK',
+          data: [],
+        };
 
       if (from && to) {
         const timeInterval: { from: Date; to: Date } = {

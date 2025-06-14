@@ -1,7 +1,6 @@
-import { Controller, Get, Post, Body, Delete } from '@nestjs/common';
+import { Controller, Get, Post, Body, Delete, Query } from '@nestjs/common';
 import { CrewPurchaseCategoryService } from './crew-purchase-category.service';
 import { CreateCrewPurchaseCategoryDto } from './dto/create-crew-purchase-category.dto';
-import { UpdateCrewPurchaseCategoryDto } from './dto/update-crew-purchase-category.dto';
 import { ValidationPipe } from 'src/validation.pipe';
 
 @Controller('crew-purchase-category')
@@ -21,13 +20,8 @@ export class CrewPurchaseCategoryController {
   }
 
   @Get()
-  findAll(
-    @Body(new ValidationPipe())
-    updateCrewPurchaseCategoryDto: UpdateCrewPurchaseCategoryDto,
-  ) {
-    return this.crewPurchaseCategoryService.findAll(
-      updateCrewPurchaseCategoryDto,
-    );
+  findAll(@Query('backoffices_setting_id') backoffices_setting_id: string) {
+    return this.crewPurchaseCategoryService.findAll(backoffices_setting_id);
   }
 
   @Delete('')
