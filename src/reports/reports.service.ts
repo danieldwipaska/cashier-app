@@ -1,11 +1,11 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
-import Response from 'src/interfaces/response.interface';
+import Response from '../interfaces/response.interface';
 import { Report } from '@prisma/client';
-import { PrismaService } from 'src/prisma.service';
-import { CrewsService } from 'src/crews/crews.service';
-import Randomize from 'src/utils/randomize.util';
-import { ReportStatus, ReportType } from 'src/enums/report';
-import { orderDiscountedPrice, ServiceTax } from 'src/utils/calculation.util';
+import { PrismaService } from '../prisma.service';
+import { CrewsService } from '../crews/crews.service';
+import Randomize from '../utils/randomize.util';
+import { ReportStatus, ReportType } from '../enums/report';
+import { orderDiscountedPrice, ServiceTax } from '../utils/calculation.util';
 import { CreateReportDto } from './dto/create-report.dto';
 import {
   UpdateRefundedItemDto,
@@ -13,7 +13,7 @@ import {
 } from './dto/update-report.dto';
 import { HttpService } from '@nestjs/axios';
 import { firstValueFrom } from 'rxjs';
-import { CustomLoggerService } from 'src/loggers/custom-logger.service';
+import { CustomLoggerService } from '../loggers/custom-logger.service';
 
 @Injectable()
 export class ReportsService {

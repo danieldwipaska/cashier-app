@@ -3,9 +3,9 @@ import {
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
-import Response from 'src/interfaces/response.interface';
+import Response from '../interfaces/response.interface';
 import * as bcrypt from 'bcrypt';
-import { PrismaService } from 'src/prisma.service';
+import { PrismaService } from '../prisma.service';
 import { Prisma, User } from '@prisma/client';
 
 @Injectable()

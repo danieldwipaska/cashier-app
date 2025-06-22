@@ -4,18 +4,16 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 import { Crew, Prisma } from '@prisma/client';
-import Response from 'src/interfaces/response.interface';
-import { PrismaService } from 'src/prisma.service';
-import { UsersService } from 'src/users/users.service';
+import Response from '../interfaces/response.interface';
+import { PrismaService } from '../prisma.service';
 import { UpdateCrewDto } from './dto/update-crew.dto';
 import { CreateCrewDto } from './dto/create-crew.dto';
-import { CustomLoggerService } from 'src/loggers/custom-logger.service';
+import { CustomLoggerService } from '../loggers/custom-logger.service';
 
 @Injectable()
 export class CrewsService {
   constructor(
     private prisma: PrismaService,
-    private usersService: UsersService,
     private readonly logger: CustomLoggerService,
   ) {}
   async create(
@@ -257,7 +255,6 @@ export class CrewsService {
           'CrewsService.remove',
           request.user?.username,
           request.requestId,
-          { id, shop_id: request.shop.id },
         );
         if (
           error instanceof Prisma.PrismaClientKnownRequestError &&
