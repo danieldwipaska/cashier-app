@@ -13,6 +13,7 @@ import {
 } from './dto/update-report.dto';
 import { HttpService } from '@nestjs/axios';
 import { firstValueFrom } from 'rxjs';
+import { CustomLoggerService } from 'src/loggers/custom-logger.service';
 
 @Injectable()
 export class ReportsService {
@@ -20,6 +21,7 @@ export class ReportsService {
     private prisma: PrismaService,
     private crewsService: CrewsService,
     private readonly httpService: HttpService,
+    private readonly logger: CustomLoggerService,
   ) {}
 
   async create(
@@ -55,12 +57,8 @@ export class ReportsService {
       },
     };
 
-    try {
-      const crew = await this.crewsService.findOne(req, crew_id);
-      if (!crew) throw new NotFoundException('Crew Not Found');
-    } catch (error) {
-      throw error;
-    }
+    const crew = await this.crewsService.findOne(req, crew_id);
+    if (!crew) throw new NotFoundException('Crew Not Found');
 
     // CALCULATE TOTAL PAYMENT
     let totalPayment = 0;
@@ -98,13 +96,30 @@ export class ReportsService {
         data: newReportData,
         include: { Item: true },
       });
+
+      this.logger.logBusinessEvent(
+        `New report created: ${report.report_id}`,
+        'REPORT_CREATED',
+        'REPORT',
+        report.id,
+        req.user?.username,
+        null,
+        report,
+        createReportDto,
+      );
       return {
         statusCode: 201,
         message: 'CREATED',
         data: report,
       };
     } catch (error) {
-      console.log(error);
+      this.logger.logError(
+        error,
+        'ReportsService.create',
+        req.user?.username,
+        req.requestId,
+        createReportDto,
+      );
       throw error;
     }
   }
@@ -213,7 +228,19 @@ export class ReportsService {
         },
       };
     } catch (error) {
-      console.log(error);
+      this.logger.logError(
+        error,
+        'ReportsService.findAll',
+        request.user?.username,
+        request.requestId,
+        {
+          from,
+          to,
+          filter,
+          page,
+          pagination,
+        },
+      );
       throw error;
     }
   }
@@ -247,7 +274,13 @@ export class ReportsService {
         data: report,
       };
     } catch (error) {
-      console.log(error);
+      this.logger.logError(
+        error,
+        'ReportsService.findOne',
+        request.user?.username,
+        request.requestId,
+        { id, shop_id: request.shop.id },
+      );
       throw error;
     }
   }
@@ -316,16 +349,51 @@ export class ReportsService {
           }),
         );
 
+        this.logger.logBusinessEvent(
+          `Receipt printed: ${receiptData.receiptNumber}`,
+          'RECEIPT_PRINT',
+          'RECEIPT',
+          receiptData.receiptNumber,
+          request.user?.username,
+          null,
+          null,
+          {
+            id,
+            shop_id: request.shop.id,
+            is_checker,
+          },
+        );
+
         return {
           statusCode: 200,
           message: 'OK',
         };
       } catch (error) {
-        console.log(error);
+        this.logger.logError(
+          error,
+          'ReportsService.printReceipt',
+          request.user?.username,
+          request.requestId,
+          {
+            id,
+            shop_id: request.shop.id,
+            is_checker,
+          },
+        );
         throw error;
       }
     } catch (error) {
-      console.log(error);
+      this.logger.logError(
+        error,
+        'ReportsService.printReceipt',
+        request.user?.username,
+        request.requestId,
+        {
+          id,
+          shop_id: request.shop.id,
+          is_checker,
+        },
+      );
       throw error;
     }
   }
@@ -350,7 +418,18 @@ export class ReportsService {
         data: reports,
       };
     } catch (error) {
-      console.log(error);
+      this.logger.logError(
+        error,
+        'ReportsService.findAllByCardNumberAndCustomerId',
+        request.user?.username,
+        request.requestId,
+        {
+          cardNumber,
+          customerId,
+          shop_id: request.shop.id,
+        },
+      );
+      throw error;
     }
   }
 
@@ -403,9 +482,27 @@ export class ReportsService {
       reportData.service_percent = taxService.servicePercent;
       reportData.total_tax = taxService.getTax();
 
+      const oldItems = await this.prisma.item.findMany({
+        where: {
+          report_id: id,
+          report: {
+            shop_id: req.shop.id,
+          },
+        },
+      });
+
+      const report = await this.prisma.report.findUnique({
+        where: {
+          id,
+          shop_id: req.shop.id,
+        },
+        include: { Item: true },
+      });
+      if (!report) throw new NotFoundException('Report Not Found');
+
       try {
         // Remove old items and add new ones
-        await this.prisma.$transaction([
+        const [, , updatedReport] = await this.prisma.$transaction([
           this.prisma.item.deleteMany({ where: { report_id: id } }),
           this.prisma.item.createMany({
             data: items.map((item) => ({
@@ -417,27 +514,92 @@ export class ReportsService {
               price: item.price,
             })),
           }),
+          this.prisma.report.update({
+            where: {
+              id,
+              shop_id: req.shop.id,
+            },
+            data: reportData,
+            include: { Item: true },
+          }),
         ]);
 
-        const report = await this.prisma.report.update({
-          where: {
+        this.logger.logBusinessEvent(
+          `Items deleted: ${oldItems.map((item) => item.id).join(', ')}`,
+          'ITEM_DELETED',
+          'ITEM',
+          oldItems.map((item) => item.id).join(', '),
+          req.user?.username,
+          oldItems,
+          null,
+          {
             id,
             shop_id: req.shop.id,
+            updateReportDto,
           },
-          data: reportData,
-          include: { Item: true },
-        });
+        );
+
+        this.logger.logBusinessEvent(
+          `New items created from fnbs: ${items.map((item) => item.fnb_id).join(', ')}`,
+          'ITEM_CREATED',
+          'ITEM',
+          items.map((item) => item.fnb_id).join(', '),
+          req.user?.username,
+          null,
+          items,
+          {
+            id,
+            shop_id: req.shop.id,
+            updateReportDto,
+          },
+        );
+
+        this.logger.logBusinessEvent(
+          `Report updated: ${updatedReport.report_id}`,
+          'REPORT_UPDATED',
+          'REPORT',
+          updatedReport.id,
+          req.user?.username,
+          report,
+          updatedReport,
+          {
+            id,
+            shop_id: req.shop.id,
+            updateReportDto,
+          },
+        );
+
         return {
           statusCode: 200,
           message: 'OK',
-          data: report,
+          data: updatedReport,
         };
       } catch (error) {
-        console.log(error);
+        this.logger.logError(
+          error,
+          'ReportsService.update',
+          req.user?.username,
+          req.requestId,
+          {
+            id,
+            shop_id: req.shop.id,
+            updateReportDto,
+          },
+        );
         throw error;
       }
     } catch (error) {
-      console.log(error);
+      this.logger.logError(
+        error,
+        'ReportsService.update',
+        req.user?.username,
+        req.requestId,
+        {
+          id,
+          shop_id: req.shop.id,
+          updateReportDto,
+        },
+      );
       throw error;
     }
   }
@@ -460,7 +622,14 @@ export class ReportsService {
 
       // Update refunded_amount for each item
       for (const item of items) {
-        await this.prisma.item.updateMany({
+        const oldItem = await this.prisma.item.findUnique({
+          where: { report_id: id, id: item.id },
+        });
+        if (!oldItem) {
+          throw new NotFoundException(`Item with id ${item.id} not found`);
+        }
+
+        const updatedItem = await this.prisma.item.update({
           where: { report_id: id, id: item.id },
           data: {
             refunded_amount: {
@@ -468,17 +637,53 @@ export class ReportsService {
             },
           },
         });
+
+        this.logger.logBusinessEvent(
+          `Item updated: report number ${report.report_id}, item id ${item.id}`,
+          'ITEM_UPDATED',
+          'ITEM',
+          item.id,
+          request.user?.username,
+          oldItem,
+          updatedItem,
+          {
+            id,
+            shop_id: request.shop.id,
+            updateRefundedItemDto,
+          },
+        );
       }
 
       return { statusCode: 200, message: 'OK' };
     } catch (error) {
+      this.logger.logError(
+        error,
+        'ReportsService.refundPartially',
+        request.user?.username,
+        request.requestId,
+        {
+          id,
+          shop_id: request.shop.id,
+          updateRefundedItemDto,
+        },
+      );
       throw error;
     }
   }
 
   async cancelOpenBill(request: any, id: string): Promise<Response<Report>> {
     try {
-      const report = await this.prisma.report.update({
+      const report = await this.prisma.report.findUnique({
+        where: {
+          id,
+          status: ReportStatus.UNPAID,
+          shop_id: request.shop.id,
+        },
+      });
+      if (!report)
+        throw new NotFoundException('Report Not Found or Already Paid');
+
+      const updatedReport = await this.prisma.report.update({
         where: {
           id,
           status: ReportStatus.UNPAID,
@@ -489,7 +694,16 @@ export class ReportsService {
         },
       });
 
-      console.log(report);
+      this.logger.logBusinessEvent(
+        `Open bill cancelled: ${updatedReport.report_id}`,
+        'REPORT_CANCELLED',
+        'REPORT',
+        updatedReport.id,
+        request.user?.username,
+        report,
+        updatedReport,
+        { id, shop_id: request.shop.id },
+      );
 
       return {
         statusCode: 200,
@@ -497,40 +711,52 @@ export class ReportsService {
         data: report,
       };
     } catch (error) {
-      console.log(error);
+      this.logger.logError(
+        error,
+        'ReportsService.cancelOpenBill',
+        request.user?.username,
+        request.requestId,
+        { id, shop_id: request.shop.id },
+      );
       throw error;
     }
   }
 
   async remove(request: any, id: string): Promise<Response<Report>> {
     try {
-      const report = await this.prisma.report.findUnique({
+      const deletedReport = await this.prisma.report.delete({
         where: {
           id,
           shop_id: request.shop.id,
         },
       });
-      if (!report) throw new NotFoundException('Report Not Found');
 
-      try {
-        await this.prisma.report.delete({
-          where: {
-            id,
-            shop_id: request.shop.id,
-          },
-        });
+      if (!deletedReport) throw new NotFoundException('Report Not Found');
 
-        return {
-          statusCode: 200,
-          message: 'OK',
-          data: report,
-        };
-      } catch (error) {
-        console.log(error);
-        throw error;
-      }
+      this.logger.logBusinessEvent(
+        `Report deleted: ${deletedReport.report_id}`,
+        'REPORT_DELETED',
+        'REPORT',
+        deletedReport.id,
+        request.user?.username,
+        deletedReport,
+        null,
+        { id, shop_id: request.shop.id },
+      );
+
+      return {
+        statusCode: 200,
+        message: 'OK',
+        data: deletedReport,
+      };
     } catch (error) {
-      console.log(error);
+      this.logger.logError(
+        error,
+        'ReportsService.remove',
+        request.user?.username,
+        request.requestId,
+        { id, shop_id: request.shop.id },
+      );
       throw error;
     }
   }

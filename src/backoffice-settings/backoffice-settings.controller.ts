@@ -19,12 +19,17 @@ export class BackofficeSettingsController {
     private readonly backofficeSettingsService: BackofficeSettingsService,
   ) {}
 
+  @UseGuards(AuthGuard, ShopGuard)
   @Post()
   create(
     @Body(new ValidationPipe())
     createBackofficeSettingDto: CreateBackofficeSettingDto,
+    @Req() request: Request,
   ) {
-    return this.backofficeSettingsService.create(createBackofficeSettingDto);
+    return this.backofficeSettingsService.create(
+      request,
+      createBackofficeSettingDto,
+    );
   }
 
   @UseGuards(AuthGuard, ShopGuard)

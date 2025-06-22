@@ -9,29 +9,37 @@ import { PrismaService } from 'src/prisma.service';
 import { UsersService } from 'src/users/users.service';
 import { UpdateCrewDto } from './dto/update-crew.dto';
 import { CreateCrewDto } from './dto/create-crew.dto';
+import { CustomLoggerService } from 'src/loggers/custom-logger.service';
 
 @Injectable()
 export class CrewsService {
   constructor(
     private prisma: PrismaService,
     private usersService: UsersService,
+    private readonly logger: CustomLoggerService,
   ) {}
   async create(
+    request: any,
     createCrewDto: CreateCrewDto,
-    username: string,
-    shop_id: string,
   ): Promise<Response<Crew>> {
     try {
-      const user = await this.usersService.findOneByUsername(username);
-      if (user.statusCode === 404)
-        throw new NotFoundException('User not exist');
-
       const crew = await this.prisma.crew.create({
         data: {
           ...createCrewDto,
-          shop_id,
+          shop_id: request.shop.id,
         },
       });
+
+      this.logger.logBusinessEvent(
+        `New crew created: ${crew.name}`,
+        'CREW_CREATED',
+        'CREW',
+        crew.id,
+        request.user?.username,
+        null,
+        crew,
+        createCrewDto,
+      );
 
       return {
         statusCode: 201,
@@ -39,6 +47,13 @@ export class CrewsService {
         data: crew,
       };
     } catch (error) {
+      this.logger.logError(
+        error,
+        'CrewsService.create',
+        request.user?.username,
+        request.requestId,
+        createCrewDto,
+      );
       throw error;
     }
   }
@@ -58,6 +73,13 @@ export class CrewsService {
         data: crews,
       };
     } catch (error) {
+      this.logger.logError(
+        error,
+        'CrewsService.findAll',
+        request.user?.username,
+        request.requestId,
+        { shop_id: request.shop.id },
+      );
       throw error;
     }
   }
@@ -77,6 +99,13 @@ export class CrewsService {
         data: crew,
       };
     } catch (error) {
+      this.logger.logError(
+        error,
+        'CrewsService.findOne',
+        request.user?.username,
+        request.requestId,
+        { id, shop_id: request.shop.id },
+      );
       throw error;
     }
   }
@@ -97,6 +126,13 @@ export class CrewsService {
         data: crew,
       };
     } catch (error) {
+      this.logger.logError(
+        error,
+        'CrewsService.findOneByCode',
+        request.user?.username,
+        request.requestId,
+        { code, shop_id: request.shop.id },
+      );
       throw error;
     }
   }
@@ -121,15 +157,40 @@ export class CrewsService {
           },
         });
 
+        this.logger.logBusinessEvent(
+          `Crew updated: ${updatedCrew.name}`,
+          'CREW_CREATED',
+          'CREW',
+          updatedCrew.id,
+          request.user?.username,
+          crew,
+          updatedCrew,
+          updateCrewDto,
+        );
+
         return {
           statusCode: 200,
           message: 'OK',
           data: updatedCrew,
         };
       } catch (error) {
+        this.logger.logError(
+          error,
+          'CrewsService.update',
+          request.user?.username,
+          request.requestId,
+          { id, shop_id: request.shop.id, updateCrewDto },
+        );
         throw error;
       }
     } catch (error) {
+      this.logger.logError(
+        error,
+        'CrewsService.update',
+        request.user?.username,
+        request.requestId,
+        { id, shop_id: request.shop.id, updateCrewDto },
+      );
       throw error;
     }
   }
@@ -143,6 +204,11 @@ export class CrewsService {
         },
       });
       if (!crew) throw new NotFoundException('Crew Not Found');
+
+      const reports = await this.prisma.report.findMany({
+        where: { crew_id: crew.id },
+        select: { id: true },
+      });
 
       try {
         const [, deletedCrew] = await this.prisma.$transaction([
@@ -158,12 +224,41 @@ export class CrewsService {
           }),
         ]);
 
+        this.logger.logBusinessEvent(
+          `Reports updated: ${reports.length} reports moved to null crew`,
+          'REPORT_UPDATED',
+          'REPORT',
+          reports.map((report) => report.id).join(', '),
+          request.user?.username,
+          reports,
+          null,
+          { crew_id: id },
+        );
+
+        this.logger.logBusinessEvent(
+          `Crew deleted: ${crew.name}`,
+          'CREW_DELETED',
+          'CREW',
+          deletedCrew.id,
+          request.user?.username,
+          deletedCrew,
+          null,
+          { crew_id: id },
+        );
+
         return {
           statusCode: 200,
           message: 'OK',
           data: deletedCrew,
         };
       } catch (error) {
+        this.logger.logError(
+          error,
+          'CrewsService.remove',
+          request.user?.username,
+          request.requestId,
+          { id, shop_id: request.shop.id },
+        );
         if (
           error instanceof Prisma.PrismaClientKnownRequestError &&
           error.code === 'P2003'

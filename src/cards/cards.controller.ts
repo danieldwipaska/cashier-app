@@ -2,7 +2,6 @@ import {
   Body,
   Controller,
   DefaultValuePipe,
-  Delete,
   Get,
   Param,
   ParseIntPipe,
@@ -114,11 +113,5 @@ export class CardsController {
     @Request() req,
   ) {
     return this.cardsService.pay(id, data, req);
-  }
-
-  @UseGuards(AuthGuard, ShopGuard)
-  @Delete(':id')
-  remove(@Param('id') id: string, @Req() req: Request) {
-    return this.cardsService.remove(id, req);
   }
 }

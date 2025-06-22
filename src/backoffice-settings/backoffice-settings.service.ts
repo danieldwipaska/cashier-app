@@ -4,18 +4,36 @@ import Response from 'src/interfaces/response.interface';
 import { BackofficeSetting } from '@prisma/client';
 import { CreateBackofficeSettingDto } from './dto/create-backoffice-setting.dto';
 import { UpdateBackofficeSettingDto } from './dto/update-backoffice-setting.dto';
+import { CustomLoggerService } from 'src/loggers/custom-logger.service';
 
 @Injectable()
 export class BackofficeSettingsService {
-  constructor(private prisma: PrismaService) {}
+  constructor(
+    private prisma: PrismaService,
+    private readonly logger: CustomLoggerService,
+  ) {}
 
   async create(
+    request: any,
     createBackofficeSettingDto: CreateBackofficeSettingDto,
   ): Promise<Response<BackofficeSetting>> {
     try {
       const backofficeSetting = await this.prisma.backofficeSetting.create({
         data: createBackofficeSettingDto,
       });
+      if (!backofficeSetting)
+        throw new NotFoundException('Backoffice Setting not found');
+
+      this.logger.logBusinessEvent(
+        `New backoffice setting created for shop: ${backofficeSetting.shop_id}`,
+        'BACKOFFICE_SETTING_CREATED',
+        'BACKOFFICE_SETTING',
+        backofficeSetting.id,
+        request.user?.username,
+        null,
+        backofficeSetting,
+        createBackofficeSettingDto,
+      );
 
       return {
         statusCode: 201,
@@ -23,7 +41,13 @@ export class BackofficeSettingsService {
         data: backofficeSetting,
       };
     } catch (error) {
-      console.log(error);
+      this.logger.logError(
+        error,
+        'BackofficeSettingsService.create',
+        request.user?.username,
+        request.requestId,
+        createBackofficeSettingDto,
+      );
       throw error;
     }
   }
@@ -49,7 +73,13 @@ export class BackofficeSettingsService {
         data: backofficeSetting,
       };
     } catch (error) {
-      console.log(error);
+      this.logger.logError(
+        error,
+        'BackofficeSettingsService.findOne',
+        req.user?.username,
+        req.requestId,
+        { shop_id: req.shop.id },
+      );
       throw error;
     }
   }
@@ -69,7 +99,11 @@ export class BackofficeSettingsService {
         throw new NotFoundException('Backoffice Setting not found');
 
       try {
-        await this.prisma.$transaction([
+        const [
+          deletedCrewPurchaseCategories,
+          newCrewPurchaseCategories,
+          updatedBackofficeSetting,
+        ] = await this.prisma.$transaction([
           this.prisma.crewPurchaseCategory.deleteMany({
             where: { backoffice_setting_id: backofficeSetting.id },
           }),
@@ -84,17 +118,52 @@ export class BackofficeSettingsService {
               id: backofficeSetting.id,
             },
             data,
+            include: {
+              shop: true,
+            },
           }),
         ]);
-      } catch (error) {}
 
-      return {
-        statusCode: 200,
-        message: 'OK',
-        data: backofficeSetting,
-      };
+        this.logger.logBusinessEvent(
+          `BackofficeSetting updated on shop: ${updatedBackofficeSetting.shop.name}`,
+          'CATEGORY_UPDATED',
+          'CATEGORY',
+          backofficeSetting.id,
+          req.user?.username,
+          {
+            backofficeSetting,
+          },
+          {
+            deletedCrewPurchaseCategories,
+            newCrewPurchaseCategories,
+            updatedBackofficeSetting,
+          },
+          updateBackofficeSettingDto,
+        );
+
+        return {
+          statusCode: 200,
+          message: 'OK',
+          data: backofficeSetting,
+        };
+      } catch (error) {
+        this.logger.logError(
+          error,
+          'BackofficeSettingsService.update',
+          req.user?.username,
+          req.requestId,
+          updateBackofficeSettingDto,
+        );
+        throw error;
+      }
     } catch (error) {
-      console.log(error);
+      this.logger.logError(
+        error,
+        'BackofficeSettingsService.update',
+        req.user?.username,
+        req.requestId,
+        updateBackofficeSettingDto,
+      );
       throw error;
     }
   }

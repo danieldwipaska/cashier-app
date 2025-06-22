@@ -285,6 +285,7 @@ export class CustomLoggerService implements NestLoggerService {
     userId?: string | number,
     oldValue?: any,
     newValue?: any,
+    dto?: any,
   ) {
     const businessContext: LogContext = {
       userId,
@@ -293,6 +294,7 @@ export class CustomLoggerService implements NestLoggerService {
       resourceId,
       oldValue,
       newValue,
+      dto,
       category: 'business_event',
     };
 

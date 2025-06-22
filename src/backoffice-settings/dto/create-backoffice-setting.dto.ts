@@ -11,10 +11,10 @@ import {
 export class CreateBackofficeSettingDto {
   @IsUUID()
   @IsString()
-  @IsOptional()
   shop_id: string;
 
   @IsArray()
+  @IsOptional()
   @ValidateNested({ each: true })
   @Type(() => CrewPurchaseCategoryDto)
   readonly crewPurchaseCategories: CrewPurchaseCategory[];

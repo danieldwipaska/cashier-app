@@ -4,7 +4,6 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 import { Card, Report } from '@prisma/client';
-import { CrewsService } from 'src/crews/crews.service';
 import { CardStatus, ReportStatus, ReportType } from 'src/enums/report';
 import { PageMetaData } from 'src/interfaces/pagination.interface';
 import Response from 'src/interfaces/response.interface';
@@ -15,13 +14,14 @@ import { CreateCardDto } from './dto/create-card.dto';
 import { CreateReportWithCardDto } from 'src/reports/dto/create-report.dto';
 import { orderDiscountedPrice, ServiceTax } from 'src/utils/calculation.util';
 import { MethodsService } from 'src/methods/methods.service';
+import { CustomLoggerService } from 'src/loggers/custom-logger.service';
 
 @Injectable()
 export class CardsService {
   constructor(
     private prisma: PrismaService,
-    private crewsService: CrewsService,
     private methodsService: MethodsService,
+    private readonly logger: CustomLoggerService,
   ) {}
 
   async create(
@@ -35,6 +35,18 @@ export class CardsService {
           shop_id: request.shop.id,
         },
       });
+      if (!card) throw new BadRequestException('Card creation failed');
+
+      this.logger.logBusinessEvent(
+        `New card created: ${card.card_number}`,
+        'CARD_CREATED',
+        'CARD',
+        card.id,
+        request.user?.username,
+        null,
+        card,
+        createCardDto,
+      );
 
       return {
         statusCode: 201,
@@ -76,7 +88,13 @@ export class CardsService {
         pageMetaData,
       };
     } catch (error) {
-      console.log(error);
+      this.logger.logError(
+        error,
+        'CardsService.findAll',
+        request.user?.username,
+        request.requestId,
+        { page, shop_id: request.shop?.id },
+      );
       throw error;
     }
   }
@@ -102,7 +120,13 @@ export class CardsService {
         data: card,
       };
     } catch (error) {
-      console.log(error);
+      this.logger.logError(
+        error,
+        'CardsService.findOneByCardNumber',
+        request.user?.username,
+        request.requestId,
+        { cardNumber, shop_id: request.shop.id },
+      );
       throw error;
     }
   }
@@ -126,7 +150,7 @@ export class CardsService {
       try {
         const balance: number = card.balance + addBalance;
 
-        const [, report] = await this.prisma.$transaction([
+        const [updatedCard, newReport] = await this.prisma.$transaction([
           this.prisma.card.update({
             where: {
               id,
@@ -159,17 +183,67 @@ export class CardsService {
           }),
         ]);
 
+        this.logger.logBusinessEvent(
+          `Card topped up and activated: ${card.card_number}`,
+          'CARD_TOPUP_ACTIVATED',
+          'CARD',
+          card.id,
+          req.user?.username,
+          card,
+          updatedCard,
+          {
+            id,
+            customerName,
+            customerId,
+            addBalance,
+            paymentMethodId,
+            note,
+          },
+        );
+
+        this.logger.logBusinessEvent(
+          `New report created: ${newReport.report_id}`,
+          'REPORT_CREATED',
+          'REPORT',
+          newReport.id,
+          req.user?.username,
+          null,
+          newReport,
+          {
+            id,
+            customerName,
+            customerId,
+            addBalance,
+            paymentMethodId,
+            note,
+          },
+        );
+
         return {
           statusCode: 200,
           message: 'OK',
-          data: report,
+          data: newReport,
         };
       } catch (error) {
         console.log(error);
         throw error;
       }
     } catch (error) {
-      console.log(error);
+      this.logger.logError(
+        error,
+        'CardsService.topUpAndActivate',
+        req.user?.username,
+        req.requestId,
+        {
+          id,
+          customerName,
+          customerId,
+          addBalance,
+          paymentMethodId,
+          note,
+          shop_id: req.shop.id,
+        },
+      );
       throw error;
     }
   }
@@ -191,7 +265,7 @@ export class CardsService {
       try {
         const balance: number = card.balance + addBalance;
 
-        const [, report] = await this.prisma.$transaction([
+        const [updatedCard, newReport] = await this.prisma.$transaction([
           this.prisma.card.update({
             where: {
               id,
@@ -219,17 +293,73 @@ export class CardsService {
           }),
         ]);
 
+        this.logger.logBusinessEvent(
+          `Card topped up: ${card.card_number}`,
+          'CARD_TOPUP',
+          'CARD',
+          card.id,
+          req.user?.username,
+          card,
+          updatedCard,
+          {
+            id,
+            addBalance,
+            paymentMethodId,
+            note,
+          },
+        );
+
+        this.logger.logBusinessEvent(
+          `New report created: ${newReport.report_id}`,
+          'REPORT_CREATED',
+          'REPORT',
+          newReport.id,
+          req.user?.username,
+          null,
+          newReport,
+          {
+            id,
+            addBalance,
+            paymentMethodId,
+            note,
+          },
+        );
+
         return {
           statusCode: 200,
           message: 'OK',
-          data: report,
+          data: newReport,
         };
       } catch (error) {
-        console.log(error);
+        this.logger.logError(
+          error,
+          'CardsService.topUp',
+          req.user?.username,
+          req.requestId,
+          {
+            id,
+            addBalance,
+            paymentMethodId,
+            note,
+            shop_id: req.shop.id,
+          },
+        );
         throw error;
       }
     } catch (error) {
-      console.log(error);
+      this.logger.logError(
+        error,
+        'CardsService.topUp',
+        req.user?.username,
+        req.requestId,
+        {
+          id,
+          addBalance,
+          paymentMethodId,
+          note,
+          shop_id: req.shop.id,
+        },
+      );
       throw error;
     }
   }
@@ -248,7 +378,7 @@ export class CardsService {
       if (!method) throw new NotFoundException('Payment Method Not Found');
 
       try {
-        const [, report] = await this.prisma.$transaction([
+        const [updatedCard, newReport] = await this.prisma.$transaction([
           this.prisma.card.update({
             where: {
               id,
@@ -281,17 +411,67 @@ export class CardsService {
           }),
         ]);
 
+        this.logger.logBusinessEvent(
+          `Card checked out: ${card.card_number}`,
+          'CARD_CHECKOUT',
+          'CARD',
+          card.id,
+          req.user?.username,
+          card,
+          updatedCard,
+          {
+            id,
+            paymentMethodId,
+            note,
+          },
+        );
+
+        this.logger.logBusinessEvent(
+          `New report created: ${newReport.report_id}`,
+          'REPORT_CREATED',
+          'REPORT',
+          newReport.id,
+          req.user?.username,
+          null,
+          newReport,
+          {
+            id,
+            paymentMethodId,
+            note,
+          },
+        );
+
         return {
           statusCode: 200,
           message: 'OK',
-          data: report,
+          data: newReport,
         };
       } catch (error) {
-        console.log(error);
+        this.logger.logError(
+          error,
+          'CardsService.checkout',
+          req.user?.username,
+          req.requestId,
+          {
+            id,
+            paymentMethodId,
+            note,
+          },
+        );
         throw error;
       }
     } catch (error) {
-      console.log(error);
+      this.logger.logError(
+        error,
+        'CardsService.checkout',
+        req.user?.username,
+        req.requestId,
+        {
+          id,
+          paymentMethodId,
+          note,
+        },
+      );
       throw error;
     }
   }
@@ -307,7 +487,7 @@ export class CardsService {
       if (!card) throw new NotFoundException('Card Not Found');
 
       try {
-        const [, report] = await this.prisma.$transaction([
+        const [updatedCard, newReport] = await this.prisma.$transaction([
           this.prisma.card.update({
             where: {
               id,
@@ -336,17 +516,67 @@ export class CardsService {
           }),
         ]);
 
+        this.logger.logBusinessEvent(
+          `Card balance adjusted: ${card.card_number}`,
+          'CARD_ADJUSTMENT',
+          'CARD',
+          card.id,
+          req.user?.username,
+          card,
+          updatedCard,
+          {
+            id,
+            adjustedBalance,
+            note,
+          },
+        );
+
+        this.logger.logBusinessEvent(
+          `New report created: ${newReport.report_id}`,
+          'REPORT_CREATED',
+          'REPORT',
+          newReport.id,
+          req.user?.username,
+          null,
+          newReport,
+          {
+            id,
+            adjustedBalance,
+            note,
+          },
+        );
+
         return {
           statusCode: 200,
           message: 'OK',
-          data: report,
+          data: newReport,
         };
       } catch (error) {
-        console.log(error);
+        this.logger.logError(
+          error,
+          'CardsService.adjustBalance',
+          req.user?.username,
+          req.requestId,
+          {
+            id,
+            adjustedBalance,
+            note,
+          },
+        );
         throw error;
       }
     } catch (error) {
-      console.log(error);
+      this.logger.logError(
+        error,
+        'CardsService.adjustBalance',
+        req.user?.username,
+        req.requestId,
+        {
+          id,
+          adjustedBalance,
+          note,
+        },
+      );
       throw error;
     }
   }
@@ -430,33 +660,29 @@ export class CardsService {
     newReportData.total_tax = taxService.getTax();
 
     let balance = 0;
-    try {
-      const card = await this.prisma.card.findUnique({
-        where: {
-          id,
-          shop_id: req.shop.id,
-        },
-      });
-      if (!card) throw new NotFoundException('Card Not Found');
 
-      balance = card.balance - taxService.calculateTax();
-      if (balance < 5000 && balance > 0)
-        throw new BadRequestException(
-          'Card Balance cannot be less than minimal balance',
-        );
-      if (balance < 0)
-        throw new BadRequestException('Card Balance cannot be less than zero');
+    const card = await this.prisma.card.findUnique({
+      where: {
+        id,
+        shop_id: req.shop.id,
+      },
+    });
+    if (!card) throw new NotFoundException('Card Not Found');
 
-      newReportData.card_number = card.card_number;
-      newReportData.initial_balance = card.balance;
-      newReportData.final_balance = balance;
-    } catch (error) {
-      console.log(error);
-      throw error;
-    }
+    balance = card.balance - taxService.calculateTax();
+    if (balance < 5000 && balance > 0)
+      throw new BadRequestException(
+        'Card Balance cannot be less than minimal balance',
+      );
+    if (balance < 0)
+      throw new BadRequestException('Card Balance cannot be less than zero');
+
+    newReportData.card_number = card.card_number;
+    newReportData.initial_balance = card.balance;
+    newReportData.final_balance = balance;
 
     try {
-      const [, report] = await this.prisma.$transaction([
+      const [updatedCard, newReport] = await this.prisma.$transaction([
         this.prisma.card.update({
           where: {
             id,
@@ -472,41 +698,50 @@ export class CardsService {
         }),
       ]);
 
+      this.logger.logBusinessEvent(
+        `Card updated: ${updatedCard.card_number}`,
+        'CARD_PAY',
+        'CARD',
+        updatedCard.id,
+        req.user?.username,
+        card,
+        updatedCard,
+        {
+          id,
+          data,
+        },
+      );
+
+      this.logger.logBusinessEvent(
+        `New report created: ${newReport.report_id}`,
+        'REPORT_CREATED',
+        'REPORT',
+        newReport.id,
+        req.user?.username,
+        null,
+        newReport,
+        {
+          id,
+          data,
+        },
+      );
+
       return {
         statusCode: 200,
         message: 'OK',
-        data: report,
+        data: newReport,
       };
     } catch (error) {
-      console.log(error);
-      throw error;
-    }
-  }
-
-  async remove(id: string, req: any): Promise<Response<Card>> {
-    try {
-      const card = await this.prisma.card.findUnique({ where: { id } });
-      if (!card) throw new NotFoundException('Card Not Found');
-
-      try {
-        const deletedCard = await this.prisma.card.delete({
-          where: {
-            id,
-            shop_id: req.shop.id,
-          },
-        });
-
-        return {
-          statusCode: 200,
-          message: 'OK',
-          data: deletedCard,
-        };
-      } catch (error) {
-        console.log(error);
-        throw error;
-      }
-    } catch (error) {
-      console.log(error);
+      this.logger.logError(
+        error,
+        'CardsService.pay',
+        req.user?.username,
+        req.requestId,
+        {
+          id,
+          data,
+        },
+      );
       throw error;
     }
   }

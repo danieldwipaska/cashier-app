@@ -33,10 +33,8 @@ export class FnbsService {
         newFnb.id,
         request.user?.username,
         null,
-        {
-          ...data,
-          shop_id: request.shop.id,
-        },
+        newFnb,
+        data,
       );
 
       return {
@@ -52,6 +50,8 @@ export class FnbsService {
         request.requestId,
         data,
       );
+
+      throw error;
     }
   }
 
@@ -98,7 +98,12 @@ export class FnbsService {
         pageMetaData,
       };
     } catch (error) {
-      console.log(error);
+      this.logger.logError(
+        error,
+        'FnbsService.findAll',
+        request.user?.username,
+        request.requestId,
+      );
       throw error;
     }
   }
@@ -120,7 +125,13 @@ export class FnbsService {
         data: fnb,
       };
     } catch (error) {
-      console.log(error);
+      this.logger.logError(
+        error,
+        'FnbsService.findOne',
+        request.user?.username,
+        request.requestId,
+        { id, shop_id: request.shop.id },
+      );
       throw error;
     }
   }
@@ -159,6 +170,10 @@ export class FnbsService {
         request.user?.username,
         fnb,
         updatedFnb,
+        {
+          id,
+          data,
+        },
       );
 
       return {
@@ -198,6 +213,9 @@ export class FnbsService {
           request.user?.username,
           fnb,
           deletedFnb,
+          {
+            id,
+          },
         );
 
         return {
@@ -220,9 +238,7 @@ export class FnbsService {
         'FnbsService.remove',
         request.user?.username,
         request.requestId,
-        {
-          id,
-        },
+        { id, shop_id: request.shop.id },
       );
     }
   }

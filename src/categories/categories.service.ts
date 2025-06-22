@@ -44,6 +44,7 @@ export class CategoriesService {
           request.user?.username,
           null,
           newCategory,
+          createCategoryDto,
         );
 
         return {
@@ -93,7 +94,15 @@ export class CategoriesService {
         data: categories,
       };
     } catch (error) {
-      console.log(error);
+      this.logger.logError(
+        error,
+        'CategoriesService.findAll',
+        request.user?.username,
+        request.requestId,
+        {
+          shop_id: request.shop?.id,
+        },
+      );
       throw error;
     }
   }
@@ -114,7 +123,16 @@ export class CategoriesService {
         data: category,
       };
     } catch (error) {
-      console.log(error);
+      this.logger.logError(
+        error,
+        'CategoriesService.findOne',
+        request.user?.username,
+        request.requestId,
+        {
+          id,
+          shop_id: request.shop?.id,
+        },
+      );
       throw error;
     }
   }
@@ -151,6 +169,7 @@ export class CategoriesService {
         request.user?.username,
         category,
         updatedCategory,
+        updateCategoryDto,
       );
 
       return {
@@ -164,9 +183,7 @@ export class CategoriesService {
         'CategoriesService.update',
         request.user?.username,
         request.requestId,
-        {
-          updateCategoryDto,
-        },
+        updateCategoryDto,
       );
     }
   }
@@ -176,14 +193,14 @@ export class CategoriesService {
       const category = await this.prisma.category.findUnique({
         where: {
           id,
-          shop_id: request.shop.id,
+          shop_id: request.shop?.id,
         },
       });
       if (!category) throw new NotFoundException('Category Not Found');
 
       try {
         const deletedCategory = await this.prisma.category.delete({
-          where: { id },
+          where: { id, shop_id: request.shop.id },
         });
 
         this.logger.logBusinessEvent(
@@ -194,6 +211,10 @@ export class CategoriesService {
           request.user?.username,
           category,
           deletedCategory,
+          {
+            id,
+            shop_id: request.shop?.id,
+          },
         );
 
         return {
@@ -207,7 +228,9 @@ export class CategoriesService {
           'CategoriesService.remove',
           request.user?.username,
           request.requestId,
-          category,
+          {
+            id,
+          },
         );
       }
     } catch (error) {

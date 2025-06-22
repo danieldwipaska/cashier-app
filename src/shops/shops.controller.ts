@@ -18,14 +18,14 @@ export class ShopsController {
   constructor(private readonly shopsService: ShopsService) {}
 
   @Post()
-  create(@Body() data: Prisma.ShopCreateInput) {
-    return this.shopsService.create(data);
+  create(@Body() data: Prisma.ShopCreateInput, @Req() request: Request) {
+    return this.shopsService.create(request, data);
   }
 
   @UseGuards(AuthGuard)
   @Get()
-  findAll() {
-    return this.shopsService.findAll();
+  findAll(@Req() request: Request) {
+    return this.shopsService.findAll(request);
   }
 
   @UseGuards(AuthGuard, ShopGuard)
@@ -36,19 +36,23 @@ export class ShopsController {
 
   @UseGuards(AuthGuard)
   @Get(':id')
-  findOne(@Param('id') id: string) {
-    return this.shopsService.findOne(id);
+  findOne(@Param('id') id: string, @Req() request: Request) {
+    return this.shopsService.findOne(request, id);
   }
 
   @UseGuards(AuthGuard)
   @Patch(':id')
-  update(@Param('id') id: string, @Body() data: Prisma.ShopUpdateInput) {
-    return this.shopsService.update(id, data);
+  update(
+    @Param('id') id: string,
+    @Body() data: Prisma.ShopUpdateInput,
+    @Req() request: Request,
+  ) {
+    return this.shopsService.update(request, id, data);
   }
 
   @UseGuards(AuthGuard)
   @Delete(':id')
-  remove(@Param('id') id: string) {
-    return this.shopsService.remove(id);
+  remove(@Param('id') id: string, @Req() request: Request) {
+    return this.shopsService.remove(request, id);
   }
 }

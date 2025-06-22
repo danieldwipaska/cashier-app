@@ -60,6 +60,22 @@ model UsersOnShops {
   @@map("users_on_shops")
 }
 
+model Card {
+  id            String     @id @default(uuid())
+  card_number   String     @unique
+  customer_id   String     @default("")
+  customer_name String     @default("")
+  balance       Int        @default(0)
+  status        CardStatus @default(INACTIVE)
+  is_member     Boolean
+  created_at    DateTime   @default(now())
+  updated_at    DateTime   @default(now()) @updatedAt
+  shop          Shop       @relation(fields: [shop_id], references: [id])
+  shop_id       String
+
+  @@map("cards")
+}
+
 model Category {
   id         String   @id @default(uuid())
   name       String   @unique
@@ -72,16 +88,6 @@ model Category {
   crew_purchase_category CrewPurchaseCategory[]
 
   @@map("categories")
-}
-
-model CrewPurchaseCategory {
-  backoffice_setting    BackofficeSetting @relation(fields: [backoffice_setting_id], references: [id])
-  backoffice_setting_id String
-  category              Category          @relation(fields: [category_id], references: [id])
-  category_id           String
-
-  @@id([backoffice_setting_id, category_id])
-  @@map("crew_purchase_categories")
 }
 
 model Fnbs {
@@ -104,21 +110,55 @@ model Fnbs {
   @@map("fnbs")
 }
 
-model Item {
-  id               String   @id @default(uuid())
-  fnb              Fnbs     @relation(fields: [fnb_id], references: [id])
-  fnb_id           String
-  amount           Int
-  refunded_amount  Int      @default(0)
-  discount_percent Int      @default(0)
-  price            Int
-  created_at       DateTime @default(now())
-  updated_at       DateTime @default(now()) @updatedAt
+model BackofficeSetting {
+  id      String @id @default(uuid())
+  shop    Shop   @relation(fields: [shop_id], references: [id])
+  shop_id String @unique
 
-  report    Report @relation(fields: [report_id], references: [id], onDelete: Cascade)
-  report_id String
+  created_at DateTime @default(now())
+  updated_at DateTime @default(now()) @updatedAt
 
-  @@map("items")
+  CrewPurchaseCategory CrewPurchaseCategory[]
+
+  @@map("backoffice_settings")
+}
+
+model CrewPurchaseCategory {
+  backoffice_setting    BackofficeSetting @relation(fields: [backoffice_setting_id], references: [id])
+  backoffice_setting_id String
+  category              Category          @relation(fields: [category_id], references: [id])
+  category_id           String
+
+  @@id([backoffice_setting_id, category_id])
+  @@map("crew_purchase_categories")
+}
+
+model Crew {
+  id         String   @id @default(uuid())
+  name       String   @unique
+  code       String   @unique
+  position   Position
+  shop       Shop     @relation(fields: [shop_id], references: [id])
+  shop_id    String
+  is_active  Boolean  @default(true)
+  created_at DateTime @default(now())
+  updated_at DateTime @default(now()) @updatedAt
+  Report     Report[]
+
+  @@map("crews")
+}
+
+model Method {
+  id         String   @id @default(uuid())
+  name       String
+  is_active  Boolean  @default(true)
+  created_at DateTime @default(now())
+  updated_at DateTime @default(now()) @updatedAt
+  shop       Shop     @relation(fields: [shop_id], references: [id])
+  shop_id    String
+  Report     Report[]
+
+  @@map("methods")
 }
 
 model Report {
@@ -153,61 +193,21 @@ model Report {
   @@map("reports")
 }
 
-model Card {
-  id            String     @id @default(uuid())
-  card_number   String     @unique
-  customer_id   String     @default("")
-  customer_name String     @default("")
-  balance       Int        @default(0)
-  status        CardStatus @default(INACTIVE)
-  is_member     Boolean
-  created_at    DateTime   @default(now())
-  updated_at    DateTime   @default(now()) @updatedAt
-  shop          Shop       @relation(fields: [shop_id], references: [id])
-  shop_id       String
+model Item {
+  id               String   @id @default(uuid())
+  fnb              Fnbs     @relation(fields: [fnb_id], references: [id])
+  fnb_id           String
+  amount           Int
+  refunded_amount  Int      @default(0)
+  discount_percent Int      @default(0)
+  price            Int
+  created_at       DateTime @default(now())
+  updated_at       DateTime @default(now()) @updatedAt
 
-  @@map("cards")
-}
+  report    Report @relation(fields: [report_id], references: [id], onDelete: Cascade)
+  report_id String
 
-model Crew {
-  id         String   @id @default(uuid())
-  name       String   @unique
-  code       String   @unique
-  position   Position
-  shop       Shop     @relation(fields: [shop_id], references: [id])
-  shop_id    String
-  is_active  Boolean  @default(true)
-  created_at DateTime @default(now())
-  updated_at DateTime @default(now()) @updatedAt
-  Report     Report[]
-
-  @@map("crews")
-}
-
-model BackofficeSetting {
-  id      String @id @default(uuid())
-  shop    Shop   @relation(fields: [shop_id], references: [id])
-  shop_id String @unique
-
-  created_at DateTime @default(now())
-  updated_at DateTime @default(now()) @updatedAt
-
-  CrewPurchaseCategory CrewPurchaseCategory[]
-
-  @@map("backoffice_settings")
-}
-
-model Method {
-  id         String   @id @default(uuid())
-  name       String
-  is_active  Boolean  @default(true)
-  created_at DateTime @default(now())
-  updated_at DateTime @default(now()) @updatedAt
-  shop       Shop     @relation(fields: [shop_id], references: [id])
-  shop_id    String
-  Report     Report[]
-
-  @@map("methods")
+  @@map("items")
 }
 
 enum ReportType {

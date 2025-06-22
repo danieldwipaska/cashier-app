@@ -10,7 +10,6 @@ import { ConfigModule } from '@nestjs/config';
 import { CardsModule } from './cards/cards.module';
 import { CrewsModule } from './crews/crews.module';
 import { ShopsModule } from './shops/shops.module';
-import { MultiusersModule } from './multiusers/multiusers.module';
 import { MethodsModule } from './methods/methods.module';
 import { BackofficeSettingsModule } from './backoffice-settings/backoffice-settings.module';
 import { CrewPurchaseCategoryModule } from './crew-purchase-category/crew-purchase-category.module';
@@ -29,7 +28,6 @@ import { LoggingMiddleware } from './middlewares/logging.middleware';
     CardsModule,
     CrewsModule,
     ShopsModule,
-    MultiusersModule,
     MethodsModule,
     BackofficeSettingsModule,
     CrewPurchaseCategoryModule,

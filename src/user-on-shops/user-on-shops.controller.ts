@@ -6,6 +6,7 @@ import {
   Patch,
   Param,
   Delete,
+  Req,
 } from '@nestjs/common';
 import { UserOnShopsService } from './user-on-shops.service';
 import { CreateUserOnShopDto } from './dto/create-user-on-shop.dto';
@@ -17,13 +18,16 @@ export class UserOnShopsController {
   constructor(private readonly userOnShopsService: UserOnShopsService) {}
 
   @Post()
-  create(@Body(new ValidationPipe()) createUserOnShopDto: CreateUserOnShopDto) {
-    return this.userOnShopsService.create(createUserOnShopDto);
+  create(
+    @Body(new ValidationPipe()) createUserOnShopDto: CreateUserOnShopDto,
+    @Req() request: Request,
+  ) {
+    return this.userOnShopsService.create(request, createUserOnShopDto);
   }
 
   @Get()
-  findAll() {
-    return this.userOnShopsService.findAll();
+  findAll(@Req() request: Request) {
+    return this.userOnShopsService.findAll(request);
   }
 
   @Patch(':shop_id/:user_id')
@@ -31,8 +35,10 @@ export class UserOnShopsController {
     @Param('shop_id') shop_id: string,
     @Param('user_id') user_id: string,
     @Body(new ValidationPipe()) updateUserOnShopDto: UpdateUserOnShopDto,
+    @Req() request: Request,
   ) {
     return this.userOnShopsService.update(
+      request,
       shop_id,
       user_id,
       updateUserOnShopDto,
@@ -40,12 +46,19 @@ export class UserOnShopsController {
   }
 
   @Delete()
-  removeMany(@Body() updateUserOnShopDto: UpdateUserOnShopDto) {
-    return this.userOnShopsService.removeMany(updateUserOnShopDto);
+  removeMany(
+    @Body() updateUserOnShopDto: UpdateUserOnShopDto,
+    @Req() request: Request,
+  ) {
+    return this.userOnShopsService.removeMany(request, updateUserOnShopDto);
   }
 
   @Delete(':shop_id/:user_id')
-  remove(@Param('shop_id') shop_id: string, @Param('user_id') user_id: string) {
-    return this.userOnShopsService.remove(user_id, shop_id);
+  remove(
+    @Param('shop_id') shop_id: string,
+    @Param('user_id') user_id: string,
+    @Req() request: Request,
+  ) {
+    return this.userOnShopsService.remove(request, user_id, shop_id);
   }
 }

@@ -10,6 +10,7 @@ import { UsersService } from 'src/users/users.service';
 import * as bcrypt from 'bcrypt';
 import { Prisma, Shop, User } from '@prisma/client';
 import { ShopsService } from 'src/shops/shops.service';
+import { CustomLoggerService } from 'src/loggers/custom-logger.service';
 
 @Injectable()
 export class AuthService {
@@ -17,19 +18,41 @@ export class AuthService {
     private usersService: UsersService,
     private shopsService: ShopsService,
     private jwtService: JwtService,
+    private readonly logger: CustomLoggerService,
   ) {}
 
-  async register(data: Prisma.UserCreateInput): Promise<Response<User>> {
+  async register(
+    request: any,
+    data: Prisma.UserCreateInput,
+  ): Promise<Response<User>> {
     try {
       const registerUser: Response<User> = await this.usersService.create(data);
-
-      if (!registerUser) throw new BadRequestException('Bad Request');
+      if (!registerUser.data) {
+        throw new BadRequestException('User registration failed');
+      }
 
       delete registerUser.data.password;
 
+      this.logger.logBusinessEvent(
+        `New user registered: ${registerUser.data.username}`,
+        'USER_REGISTERED',
+        'USER',
+        registerUser.data.id,
+        request.user?.username,
+        null,
+        registerUser.data,
+        data,
+      );
+
       return registerUser;
     } catch (error) {
-      console.log(error);
+      this.logger.logError(
+        error,
+        'AuthService.register',
+        request.user?.username,
+        request.requestId,
+        data,
+      );
       throw error;
     }
   }
@@ -65,6 +88,21 @@ export class AuthService {
         shop_code: shop.data.code,
       };
 
+      this.logger.logBusinessEvent(
+        `User logged in: ${user.data.username}`,
+        'USER_LOGGED_IN',
+        'USER',
+        user.data.id,
+        user.data.username,
+        null,
+        null,
+        {
+          username,
+          password,
+          shop_code,
+        },
+      );
+
       return {
         statusCode: 200,
         message: 'OK',
@@ -72,7 +110,10 @@ export class AuthService {
         accessToken,
       };
     } catch (error) {
-      console.log(error);
+      this.logger.logError(error, 'AuthService.validateUser', username, null, {
+        username,
+        shop_code,
+      });
       throw error;
     }
   }

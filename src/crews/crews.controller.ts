@@ -24,13 +24,9 @@ export class CrewsController {
   @Post()
   create(
     @Body(new ValidationPipe()) createCrewDto: CreateCrewDto,
-    @Request() req,
+    @Req() request: Request,
   ) {
-    return this.crewsService.create(
-      createCrewDto,
-      req.user.username,
-      req.shop.id,
-    );
+    return this.crewsService.create(request, createCrewDto);
   }
 
   @UseGuards(AuthGuard, ShopGuard)
