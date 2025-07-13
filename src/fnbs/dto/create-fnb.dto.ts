@@ -1,4 +1,11 @@
-import { IsNumber, IsString, IsUUID, MaxLength } from 'class-validator';
+import {
+  IsArray,
+  IsNumber,
+  IsOptional,
+  IsString,
+  IsUUID,
+  MaxLength,
+} from 'class-validator';
 
 export class CreateFnbDto {
   @IsString()
@@ -11,4 +18,20 @@ export class CreateFnbDto {
   @IsString()
   @IsUUID()
   category_id: string;
+
+  @IsArray()
+  @IsOptional()
+  readonly fnbModifiers?: FnbModifierDto[];
+}
+
+export class FnbModifierDto {
+  @IsUUID()
+  @IsString()
+  @IsOptional()
+  modifier_id?: string;
+
+  @IsUUID()
+  @IsString()
+  @IsOptional()
+  fnb_id?: string;
 }

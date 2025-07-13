@@ -15,9 +15,9 @@ import {
   ValidationPipe,
 } from '@nestjs/common';
 import { FnbsService } from './fnbs.service';
-import { Prisma } from '@prisma/client';
 import { AuthGuard, ShopGuard } from 'src/auth/auth.guard';
 import { CreateFnbDto } from './dto/create-fnb.dto';
+import { UpdateFnbDto } from './dto/update-fnb.dto';
 
 @Controller('fnbs')
 export class FnbsController {
@@ -54,9 +54,9 @@ export class FnbsController {
   update(
     @Req() request: Request,
     @Param('id') id: string,
-    @Body() data: Prisma.FnbsUpdateInput,
+    @Body() updateFnbDto: UpdateFnbDto,
   ) {
-    return this.fnbsService.update(request, id, data);
+    return this.fnbsService.update(request, id, updateFnbDto);
   }
 
   @UseGuards(AuthGuard, ShopGuard)

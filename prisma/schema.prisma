@@ -46,6 +46,7 @@ model Shop {
   Report   Report[]
   Card     Card[]
   Method   Method[]
+  Modifier Modifier[]
 
   @@map("shops")
 }
@@ -105,9 +106,35 @@ model Fnbs {
   shop             Shop     @relation(fields: [shop_id], references: [id])
   shop_id          String
 
-  Item Item[]
+  Item        Item[]
+  FnbModifier FnbModifier[]
 
   @@map("fnbs")
+}
+
+model Modifier {
+  id           String         @id @default(uuid())
+  code         String         @unique
+  name         String
+  is_active    Boolean        @default(true)
+  created_at   DateTime       @default(now())
+  updated_at   DateTime       @default(now()) @updatedAt
+  shop         Shop           @relation(fields: [shop_id], references: [id])
+  shop_id      String
+  FnbModifier  FnbModifier[]
+  ModifierItem ModifierItem[]
+
+  @@map("modifiers")
+}
+
+model FnbModifier {
+  modifier    Modifier @relation(fields: [modifier_id], references: [id])
+  modifier_id String
+  fnb         Fnbs     @relation(fields: [fnb_id], references: [id])
+  fnb_id      String
+
+  @@id([modifier_id, fnb_id])
+  @@map("fnb_modifiers")
 }
 
 model BackofficeSetting {
@@ -183,7 +210,7 @@ model Report {
   updated_at                      DateTime     @default(now()) @updatedAt
   shop                            Shop         @relation(fields: [shop_id], references: [id])
   shop_id                         String
-  crew                            Crew?         @relation(fields: [crew_id], references: [id])
+  crew                            Crew?        @relation(fields: [crew_id], references: [id])
   crew_id                         String?
   method                          Method?      @relation(fields: [method_id], references: [id])
   method_id                       String?
@@ -201,13 +228,25 @@ model Item {
   refunded_amount  Int      @default(0)
   discount_percent Int      @default(0)
   price            Int
+  note             String   @default("")
   created_at       DateTime @default(now())
   updated_at       DateTime @default(now()) @updatedAt
 
-  report    Report @relation(fields: [report_id], references: [id], onDelete: Cascade)
-  report_id String
+  report       Report         @relation(fields: [report_id], references: [id], onDelete: Cascade)
+  report_id    String
+  ModifierItem ModifierItem[]
 
   @@map("items")
+}
+
+model ModifierItem {
+  modifier    Modifier @relation(fields: [modifier_id], references: [id])
+  modifier_id String
+  item        Item     @relation(fields: [item_id], references: [id], onDelete: Cascade)
+  item_id     String
+
+  @@id([modifier_id, item_id])
+  @@map("modifier_item")
 }
 
 enum ReportType {

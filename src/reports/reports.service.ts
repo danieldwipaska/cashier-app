@@ -53,6 +53,12 @@ export class ReportsService {
           refunded_amount: item.refunded_amount || 0,
           discount_percent: item.discount_percent || 0,
           price: item.price,
+          note: item.note,
+          ModifierItem: {
+            create: item.modifierItems.map((modifierItem) => ({
+              modifier_id: modifierItem.modifier_id,
+            })),
+          },
         })),
       },
     };
@@ -255,9 +261,10 @@ export class ReportsService {
         include: {
           Item: {
             include: {
-              fnb: {
-                select: {
-                  name: true,
+              fnb: true,
+              ModifierItem: {
+                include: {
+                  modifier: true,
                 },
               },
             },
@@ -502,27 +509,42 @@ export class ReportsService {
 
       try {
         // Remove old items and add new ones
-        const [, , updatedReport] = await this.prisma.$transaction([
-          this.prisma.item.deleteMany({ where: { report_id: id } }),
-          this.prisma.item.createMany({
-            data: items.map((item) => ({
-              report_id: id,
-              fnb_id: item.fnb_id,
-              amount: item.amount,
-              refunded_amount: item.refunded_amount || 0,
-              discount_percent: item.discount_percent || 0,
-              price: item.price,
-            })),
-          }),
-          this.prisma.report.update({
+        const updatedReport = await this.prisma.$transaction(async (prisma) => {
+          // Delete old items first
+          await prisma.item.deleteMany({ where: { report_id: id } });
+
+          // Create each item one by one to allow nested create
+          for (const item of items) {
+            await prisma.item.create({
+              data: {
+                report_id: id,
+                fnb_id: item.fnb_id,
+                amount: item.amount,
+                refunded_amount: item.refunded_amount || 0,
+                discount_percent: item.discount_percent || 0,
+                price: item.price,
+                note: item.note,
+                ModifierItem: {
+                  create: item.modifierItems.map((modifierItem) => ({
+                    modifier_id: modifierItem.modifier_id,
+                  })),
+                },
+              },
+            });
+          }
+
+          // Update report
+          const updatedReport = await prisma.report.update({
             where: {
               id,
               shop_id: req.shop.id,
             },
             data: reportData,
             include: { Item: true },
-          }),
-        ]);
+          });
+
+          return updatedReport;
+        });
 
         this.logger.logBusinessEvent(
           `Items deleted: ${oldItems.map((item) => item.id).join(', ')}`,

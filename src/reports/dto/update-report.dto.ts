@@ -13,6 +13,7 @@ import {
 } from 'class-validator';
 import { Type } from 'class-transformer';
 import { ReportStatus } from 'src/enums/report';
+import { ModifierItemDto } from './create-report.dto';
 
 export class ItemDto {
   @IsUUID(4, { message: 'Fnb ID must be a valid UUID' })
@@ -36,6 +37,16 @@ export class ItemDto {
   @IsNumber()
   @Min(0)
   readonly price: number;
+
+  @IsString()
+  @IsOptional()
+  readonly note: string;
+
+  @IsArray()
+  @IsOptional()
+  @ValidateNested({ each: true })
+  @Type(() => ModifierItemDto)
+  readonly modifierItems?: ModifierItemDto[];
 }
 
 export class UpdateReportDto {

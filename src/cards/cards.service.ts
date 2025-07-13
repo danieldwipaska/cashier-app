@@ -615,6 +615,12 @@ export class CardsService {
           refunded_amount: item.refunded_amount || 0,
           discount_percent: item.discount_percent || 0,
           price: item.price,
+          note: item.note,
+          ModifierItem: {
+            create: item.modifierItems.map((modifierItem) => ({
+              modifier_id: modifierItem.modifier_id,
+            })),
+          },
         })),
       },
     };

@@ -36,6 +36,28 @@ export class ItemDto {
   @IsNumber()
   @Min(0)
   readonly price: number;
+
+  @IsString()
+  @IsOptional()
+  readonly note: string;
+
+  @IsArray()
+  @IsOptional()
+  @ValidateNested({ each: true })
+  @Type(() => ModifierItemDto)
+  readonly modifierItems?: ModifierItemDto[];
+}
+
+export class ModifierItemDto {
+  @IsUUID()
+  @IsString()
+  @IsOptional()
+  modifier_id?: string;
+
+  @IsUUID()
+  @IsString()
+  @IsOptional()
+  item_id?: string;
 }
 
 export class CreateReportDto {

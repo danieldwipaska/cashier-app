@@ -106,21 +106,8 @@ export class CrewPurchaseCategoryService {
             backoffice_setting: true,
           },
         });
-      if (!crewPurchaseCategory) throw new NotFoundException('Card Not Found');
-
-      this.logger.logBusinessEvent(
-        `Crew purchase category removed: ${crewPurchaseCategory.category.name}`,
-        'CREW_PURCHASE_CATEGORY_REMOVED',
-        'CREW_PURCHASE_CATEGORY',
-        crewPurchaseCategory.backoffice_setting_id,
-        request.user?.username,
-        crewPurchaseCategory,
-        null,
-        {
-          backoffice_setting_id,
-          category_id,
-        },
-      );
+      if (!crewPurchaseCategory)
+        throw new NotFoundException('CrewPurchaseCategory Not Found');
 
       try {
         const deletedCrewPurchaseCategory =
@@ -132,6 +119,20 @@ export class CrewPurchaseCategoryService {
               },
             },
           });
+
+        this.logger.logBusinessEvent(
+          `Crew purchase category removed: ${crewPurchaseCategory.category.name}`,
+          'CREW_PURCHASE_CATEGORY_REMOVED',
+          'CREW_PURCHASE_CATEGORY',
+          crewPurchaseCategory.backoffice_setting_id,
+          request.user?.username,
+          crewPurchaseCategory,
+          null,
+          {
+            backoffice_setting_id,
+            category_id,
+          },
+        );
 
         return {
           statusCode: 200,

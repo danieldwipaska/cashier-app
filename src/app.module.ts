@@ -16,6 +16,8 @@ import { CrewPurchaseCategoryModule } from './crew-purchase-category/crew-purcha
 import { UserOnShopsModule } from './user-on-shops/user-on-shops.module';
 import { LoggerModule } from './loggers/logger.module';
 import { LoggingMiddleware } from './middlewares/logging.middleware';
+import { ModifiersModule } from './modifiers/modifiers.module';
+import { FnbModifiersModule } from './fnb-modifiers/fnb-modifiers.module';
 
 @Module({
   imports: [
@@ -33,6 +35,8 @@ import { LoggingMiddleware } from './middlewares/logging.middleware';
     CrewPurchaseCategoryModule,
     UserOnShopsModule,
     LoggerModule,
+    ModifiersModule,
+    FnbModifiersModule,
   ],
   controllers: [AppController],
   providers: [AppService],
