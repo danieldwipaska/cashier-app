@@ -18,9 +18,11 @@ import { LoggerModule } from './loggers/logger.module';
 import { LoggingMiddleware } from './middlewares/logging.middleware';
 import { ModifiersModule } from './modifiers/modifiers.module';
 import { FnbModifiersModule } from './fnb-modifiers/fnb-modifiers.module';
+import { SentryModule } from '@sentry/nestjs/setup';
 
 @Module({
   imports: [
+    SentryModule.forRoot(),
     FnbsModule,
     CategoriesModule,
     ReportsModule,
@@ -43,6 +45,6 @@ import { FnbModifiersModule } from './fnb-modifiers/fnb-modifiers.module';
 })
 export class AppModule {
   configure(consumer: MiddlewareConsumer) {
-    consumer.apply(LoggingMiddleware).forRoutes('*'); // Terapkan middleware ke semua rute
+    consumer.apply(LoggingMiddleware).forRoutes('*');
   }
 }
