@@ -15,15 +15,20 @@ import {
   ValidationPipe,
 } from '@nestjs/common';
 import { FnbsService } from './fnbs.service';
-import { AuthGuard, ShopGuard } from 'src/auth/auth.guard';
+import { AuthGuard, RoleGuard, ShopGuard } from 'src/auth/auth.guard';
 import { CreateFnbDto } from './dto/create-fnb.dto';
 import { UpdateFnbDto } from './dto/update-fnb.dto';
+import { UserRole } from 'src/enums/user';
 
 @Controller('fnbs')
 export class FnbsController {
   constructor(private readonly fnbsService: FnbsService) {}
 
-  @UseGuards(AuthGuard, ShopGuard)
+  @UseGuards(
+    AuthGuard,
+    new RoleGuard([UserRole.ADMIN, UserRole.MANAGER, UserRole.GREETER]),
+    ShopGuard,
+  )
   @Post()
   create(
     @Req() request: Request,
@@ -49,7 +54,11 @@ export class FnbsController {
     return this.fnbsService.findOne(request, id);
   }
 
-  @UseGuards(AuthGuard, ShopGuard)
+  @UseGuards(
+    AuthGuard,
+    new RoleGuard([UserRole.ADMIN, UserRole.MANAGER, UserRole.GREETER]),
+    ShopGuard,
+  )
   @Patch(':id')
   update(
     @Req() request: Request,
@@ -59,7 +68,7 @@ export class FnbsController {
     return this.fnbsService.update(request, id, updateFnbDto);
   }
 
-  @UseGuards(AuthGuard, ShopGuard)
+  @UseGuards(AuthGuard, new RoleGuard([UserRole.ADMIN]), ShopGuard)
   @Delete(':id')
   remove(@Req() request: Request, @Param('id') id: string) {
     return this.fnbsService.remove(request, id);

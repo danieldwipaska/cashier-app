@@ -182,55 +182,86 @@ export class FnbsService {
       });
       if (!fnb) throw new NotFoundException('Fnb Not Found');
 
-      const [deletedFnbModifiers, createdFnbModifiers, updatedFnb] =
-        await this.prisma.$transaction([
-          this.prisma.fnbModifier.deleteMany({
-            where: {
-              fnb_id: fnb.id,
-            },
-          }),
-          this.prisma.fnbModifier.createMany({
-            data: fnbModifiers.map((fnbModifier) => {
-              return {
-                fnb_id: id,
-                modifier_id: fnbModifier.modifier_id,
-              };
+      if (fnbModifiers && fnbModifiers.length) {
+        const [deletedFnbModifiers, createdFnbModifiers, updatedFnb] =
+          await this.prisma.$transaction([
+            this.prisma.fnbModifier.deleteMany({
+              where: {
+                fnb_id: fnb.id,
+              },
             }),
-          }),
-          this.prisma.fnbs.update({
-            where: {
-              id,
-              shop_id: request.shop.id,
-            },
-            include: { category: true },
-            data,
-          }),
-        ]);
+            this.prisma.fnbModifier.createMany({
+              data: fnbModifiers.map((fnbModifier) => {
+                return {
+                  fnb_id: id,
+                  modifier_id: fnbModifier.modifier_id,
+                };
+              }),
+            }),
+            this.prisma.fnbs.update({
+              where: {
+                id,
+                shop_id: request.shop.id,
+              },
+              include: { category: true },
+              data,
+            }),
+          ]);
+        this.logger.logBusinessEvent(
+          `Product updated: ${updatedFnb.name}`,
+          'PRODUCT_UPDATED',
+          'PRODUCT',
+          updatedFnb.id,
+          request.user?.username,
+          fnb,
+          {
+            deletedFnbModifiers,
+            createdFnbModifiers,
+            updatedFnb,
+          },
+          {
+            id,
+            updateFnbDto,
+            shop_id: request.shop?.id,
+          },
+        );
 
-      this.logger.logBusinessEvent(
-        `Product updated: ${updatedFnb.name}`,
-        'PRODUCT_UPDATED',
-        'PRODUCT',
-        updatedFnb.id,
-        request.user?.username,
-        fnb,
-        {
-          deletedFnbModifiers,
-          createdFnbModifiers,
+        return {
+          statusCode: 200,
+          message: 'OK',
+          data: updatedFnb,
+        };
+      } else {
+        const updatedFnb = await this.prisma.fnbs.update({
+          where: {
+            id,
+            shop_id: request.shop.id,
+          },
+          include: { category: true },
+          data,
+        });
+
+        this.logger.logBusinessEvent(
+          `Product updated: ${updatedFnb.name}`,
+          'PRODUCT_UPDATED',
+          'PRODUCT',
+          updatedFnb.id,
+          request.user?.username,
+          fnb,
           updatedFnb,
-        },
-        {
-          id,
-          updateFnbDto,
-          shop_id: request.shop?.id,
-        },
-      );
+          {
+            id,
+            updateFnbDto,
+            shop_id: request.shop?.id,
+          },
+        );
 
-      return {
-        statusCode: 200,
-        message: 'OK',
-        data: updatedFnb,
-      };
+        return {
+          statusCode: 200,
+          message: 'OK',
+          data: updatedFnb,
+        };
+      }
     } catch (error) {
       this.logger.logError(
         error,

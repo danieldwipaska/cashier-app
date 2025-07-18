@@ -11,15 +11,20 @@ import {
   ValidationPipe,
 } from '@nestjs/common';
 import { MethodsService } from './methods.service';
-import { AuthGuard, ShopGuard } from 'src/auth/auth.guard';
+import { AuthGuard, RoleGuard, ShopGuard } from 'src/auth/auth.guard';
 import { CreateMethodDto } from './dto/create-method.dto';
 import { UpdateMethodDto } from './dto/update-method.dto';
+import { UserRole } from 'src/enums/user';
 
 @Controller('methods')
 export class MethodsController {
   constructor(private readonly methodsService: MethodsService) {}
 
-  @UseGuards(AuthGuard, ShopGuard)
+  @UseGuards(
+    AuthGuard,
+    new RoleGuard([UserRole.ADMIN, UserRole.MANAGER, UserRole.GREETER]),
+    ShopGuard,
+  )
   @Post()
   create(
     @Req() request: Request,
@@ -40,7 +45,11 @@ export class MethodsController {
     return this.methodsService.findOne(request, id);
   }
 
-  @UseGuards(AuthGuard, ShopGuard)
+  @UseGuards(
+    AuthGuard,
+    new RoleGuard([UserRole.ADMIN, UserRole.MANAGER, UserRole.GREETER]),
+    ShopGuard,
+  )
   @Patch(':id')
   update(
     @Req() request: Request,
@@ -50,7 +59,7 @@ export class MethodsController {
     return this.methodsService.update(request, id, updateMethodDto);
   }
 
-  @UseGuards(AuthGuard, ShopGuard)
+  @UseGuards(AuthGuard, new RoleGuard([UserRole.ADMIN]), ShopGuard)
   @Delete(':id')
   remove(@Req() request: Request, @Param('id') id: string) {
     return this.methodsService.remove(request, id);

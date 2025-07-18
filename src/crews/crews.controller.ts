@@ -12,15 +12,20 @@ import {
   ValidationPipe,
 } from '@nestjs/common';
 import { CrewsService } from './crews.service';
-import { AuthGuard, ShopGuard } from 'src/auth/auth.guard';
+import { AuthGuard, RoleGuard, ShopGuard } from 'src/auth/auth.guard';
 import { UpdateCrewDto } from './dto/update-crew.dto';
 import { CreateCrewDto } from './dto/create-crew.dto';
+import { UserRole } from 'src/enums/user';
 
 @Controller('crews')
 export class CrewsController {
   constructor(private readonly crewsService: CrewsService) {}
 
-  @UseGuards(AuthGuard, ShopGuard)
+  @UseGuards(
+    AuthGuard,
+    new RoleGuard([UserRole.ADMIN, UserRole.MANAGER]),
+    ShopGuard,
+  )
   @Post()
   create(
     @Body(new ValidationPipe()) createCrewDto: CreateCrewDto,
@@ -47,7 +52,11 @@ export class CrewsController {
     return this.crewsService.findOneByCode(request, code);
   }
 
-  @UseGuards(AuthGuard, ShopGuard)
+  @UseGuards(
+    AuthGuard,
+    new RoleGuard([UserRole.ADMIN, UserRole.MANAGER]),
+    ShopGuard,
+  )
   @Patch(':id')
   update(
     @Req() request: Request,
@@ -57,7 +66,11 @@ export class CrewsController {
     return this.crewsService.update(request, id, updateCrewDto);
   }
 
-  @UseGuards(AuthGuard, ShopGuard)
+  @UseGuards(
+    AuthGuard,
+    new RoleGuard([UserRole.ADMIN, UserRole.MANAGER]),
+    ShopGuard,
+  )
   @Delete(':id')
   remove(@Req() request: Request, @Param('id') id: string) {
     return this.crewsService.remove(request, id);

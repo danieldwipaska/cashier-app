@@ -13,13 +13,18 @@ import {
 import { ModifiersService } from './modifiers.service';
 import { CreateModifierDto } from './dto/create-modifier.dto';
 import { UpdateModifierDto } from './dto/update-modifier.dto';
-import { AuthGuard, ShopGuard } from 'src/auth/auth.guard';
+import { AuthGuard, RoleGuard, ShopGuard } from 'src/auth/auth.guard';
+import { UserRole } from 'src/enums/user';
 
 @Controller('modifiers')
 export class ModifiersController {
   constructor(private readonly modifiersService: ModifiersService) {}
 
-  @UseGuards(AuthGuard, ShopGuard)
+  @UseGuards(
+    AuthGuard,
+    new RoleGuard([UserRole.ADMIN, UserRole.MANAGER, UserRole.GREETER]),
+    ShopGuard,
+  )
   @Post()
   create(
     @Req() request: Request,
@@ -40,7 +45,11 @@ export class ModifiersController {
     return this.modifiersService.findOne(request, id);
   }
 
-  @UseGuards(AuthGuard, ShopGuard)
+  @UseGuards(
+    AuthGuard,
+    new RoleGuard([UserRole.ADMIN, UserRole.MANAGER, UserRole.GREETER]),
+    ShopGuard,
+  )
   @Patch(':id')
   update(
     @Req() request: Request,
@@ -50,7 +59,7 @@ export class ModifiersController {
     return this.modifiersService.update(request, id, updateModifierDto);
   }
 
-  @UseGuards(AuthGuard, ShopGuard)
+  @UseGuards(AuthGuard, new RoleGuard([UserRole.ADMIN]), ShopGuard)
   @Delete(':id')
   remove(@Req() request: Request, @Param('id') id: string) {
     return this.modifiersService.remove(request, id);

@@ -8,6 +8,7 @@ import { JwtService } from '@nestjs/jwt';
 
 import { Request } from 'express';
 import { CrewsService } from 'src/crews/crews.service';
+import { UserRole } from 'src/enums/user';
 import { ShopsService } from 'src/shops/shops.service';
 
 @Injectable()
@@ -40,6 +41,26 @@ export class AuthGuard implements CanActivate {
 }
 
 @Injectable()
+export class RoleGuard implements CanActivate {
+  private roles: UserRole[] = [];
+
+  constructor(userRoles: UserRole[]) {
+    this.roles = userRoles;
+    return this;
+  }
+
+  async canActivate(context: ExecutionContext): Promise<boolean> {
+    const request = context.switchToHttp().getRequest();
+    const role = request.user.role;
+
+    if (!this.roles.includes(role))
+      throw new UnauthorizedException('You do not have access');
+
+    return true;
+  }
+}
+
+@Injectable()
 export class CrewGuard implements CanActivate {
   constructor(private crewsService: CrewsService) {}
 
@@ -52,7 +73,7 @@ export class CrewGuard implements CanActivate {
         request.body.crewCode,
       );
 
-      if (!crew) {
+      if (!crew || !crew.data.is_active) {
         throw new UnauthorizedException();
       }
 

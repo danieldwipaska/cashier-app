@@ -52,9 +52,9 @@ model Shop {
 }
 
 model UsersOnShops {
-  shop    Shop   @relation(fields: [shop_id], references: [id])
+  shop    Shop   @relation(fields: [shop_id], references: [id], onDelete: Cascade)
   shop_id String
-  user    User   @relation(fields: [user_id], references: [id])
+  user    User   @relation(fields: [user_id], references: [id], onDelete: Cascade)
   user_id String
 
   @@id([shop_id, user_id])
@@ -79,21 +79,23 @@ model Card {
 
 model Category {
   id         String   @id @default(uuid())
-  name       String   @unique
+  name       String
+  is_active  Boolean  @default(true)
   created_at DateTime @default(now())
   updated_at DateTime @default(now()) @updatedAt
-  shop       Shop     @relation(fields: [shop_id], references: [id])
+  shop       Shop     @relation(fields: [shop_id], references: [id], onDelete: Cascade)
   shop_id    String
 
   fnbs                   Fnbs[]
   crew_purchase_category CrewPurchaseCategory[]
 
+  @@unique([shop_id, name])
   @@map("categories")
 }
 
 model Fnbs {
   id               String   @id @default(uuid())
-  name             String   @unique
+  name             String
   price            Int
   availability     Boolean  @default(true)
   is_active        Boolean  @default(true)
@@ -101,36 +103,38 @@ model Fnbs {
   discount_percent Int      @default(0)
   created_at       DateTime @default(now())
   updated_at       DateTime @default(now()) @updatedAt
-  category         Category @relation(fields: [category_id], references: [id])
+  category         Category @relation(fields: [category_id], references: [id], onDelete: Cascade)
   category_id      String
-  shop             Shop     @relation(fields: [shop_id], references: [id])
+  shop             Shop     @relation(fields: [shop_id], references: [id], onDelete: Cascade)
   shop_id          String
 
   Item        Item[]
   FnbModifier FnbModifier[]
 
+  @@unique([shop_id, name])
   @@map("fnbs")
 }
 
 model Modifier {
   id           String         @id @default(uuid())
-  code         String         @unique
+  code         String
   name         String
   is_active    Boolean        @default(true)
   created_at   DateTime       @default(now())
   updated_at   DateTime       @default(now()) @updatedAt
-  shop         Shop           @relation(fields: [shop_id], references: [id])
+  shop         Shop           @relation(fields: [shop_id], references: [id], onDelete: Cascade)
   shop_id      String
   FnbModifier  FnbModifier[]
   ModifierItem ModifierItem[]
 
+  @@unique([shop_id, code])
   @@map("modifiers")
 }
 
 model FnbModifier {
-  modifier    Modifier @relation(fields: [modifier_id], references: [id])
+  modifier    Modifier @relation(fields: [modifier_id], references: [id], onDelete: Cascade)
   modifier_id String
-  fnb         Fnbs     @relation(fields: [fnb_id], references: [id])
+  fnb         Fnbs     @relation(fields: [fnb_id], references: [id], onDelete: Cascade)
   fnb_id      String
 
   @@id([modifier_id, fnb_id])
@@ -139,7 +143,7 @@ model FnbModifier {
 
 model BackofficeSetting {
   id      String @id @default(uuid())
-  shop    Shop   @relation(fields: [shop_id], references: [id])
+  shop    Shop   @relation(fields: [shop_id], references: [id], onDelete: Cascade)
   shop_id String @unique
 
   created_at DateTime @default(now())
@@ -151,9 +155,9 @@ model BackofficeSetting {
 }
 
 model CrewPurchaseCategory {
-  backoffice_setting    BackofficeSetting @relation(fields: [backoffice_setting_id], references: [id])
+  backoffice_setting    BackofficeSetting @relation(fields: [backoffice_setting_id], references: [id], onDelete: Cascade)
   backoffice_setting_id String
-  category              Category          @relation(fields: [category_id], references: [id])
+  category              Category          @relation(fields: [category_id], references: [id], onDelete: Cascade)
   category_id           String
 
   @@id([backoffice_setting_id, category_id])
@@ -162,16 +166,18 @@ model CrewPurchaseCategory {
 
 model Crew {
   id         String   @id @default(uuid())
-  name       String   @unique
-  code       String   @unique
+  name       String
+  code       String
   position   Position
-  shop       Shop     @relation(fields: [shop_id], references: [id])
+  shop       Shop     @relation(fields: [shop_id], references: [id], onDelete: Cascade)
   shop_id    String
   is_active  Boolean  @default(true)
   created_at DateTime @default(now())
   updated_at DateTime @default(now()) @updatedAt
   Report     Report[]
 
+  @@unique([shop_id, name])
+  @@unique([shop_id, code])
   @@map("crews")
 }
 
@@ -181,10 +187,11 @@ model Method {
   is_active  Boolean  @default(true)
   created_at DateTime @default(now())
   updated_at DateTime @default(now()) @updatedAt
-  shop       Shop     @relation(fields: [shop_id], references: [id])
+  shop       Shop     @relation(fields: [shop_id], references: [id], onDelete: Cascade)
   shop_id    String
   Report     Report[]
 
+  @@unique([shop_id, name])
   @@map("methods")
 }
 
@@ -208,21 +215,22 @@ model Report {
   is_deleted                      Boolean      @default(false)
   created_at                      DateTime     @default(now())
   updated_at                      DateTime     @default(now()) @updatedAt
-  shop                            Shop         @relation(fields: [shop_id], references: [id])
+  shop                            Shop         @relation(fields: [shop_id], references: [id], onDelete: Cascade)
   shop_id                         String
-  crew                            Crew?        @relation(fields: [crew_id], references: [id])
+  crew                            Crew?        @relation(fields: [crew_id], references: [id], onDelete: SetNull)
   crew_id                         String?
-  method                          Method?      @relation(fields: [method_id], references: [id])
+  method                          Method?      @relation(fields: [method_id], references: [id], onDelete: SetNull)
   method_id                       String?
 
   Item Item[]
 
+  @@unique([shop_id, report_id])
   @@map("reports")
 }
 
 model Item {
   id               String   @id @default(uuid())
-  fnb              Fnbs     @relation(fields: [fnb_id], references: [id])
+  fnb              Fnbs     @relation(fields: [fnb_id], references: [id], onDelete: Restrict)
   fnb_id           String
   amount           Int
   refunded_amount  Int      @default(0)
@@ -240,7 +248,7 @@ model Item {
 }
 
 model ModifierItem {
-  modifier    Modifier @relation(fields: [modifier_id], references: [id])
+  modifier    Modifier @relation(fields: [modifier_id], references: [id], onDelete: Cascade)
   modifier_id String
   item        Item     @relation(fields: [item_id], references: [id], onDelete: Cascade)
   item_id     String
@@ -264,10 +272,10 @@ enum ReportStatus {
 }
 
 enum Role {
-  ADMIN
-  MANAGER
-  GREETER
-  SERVER
+  ADMIN // All
+  MANAGER // POS & Backoffices & Crews
+  GREETER // POS & Backoffices
+  SERVER // POS
 }
 
 enum Position {
