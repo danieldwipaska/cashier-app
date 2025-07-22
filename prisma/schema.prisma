@@ -111,7 +111,6 @@ model Fnbs {
   Item        Item[]
   FnbModifier FnbModifier[]
 
-  @@unique([shop_id, name])
   @@map("fnbs")
 }
 
