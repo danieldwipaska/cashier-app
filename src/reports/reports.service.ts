@@ -144,8 +144,9 @@ export class ReportsService {
     },
     page?: number,
     pagination?: boolean,
+    per_page?: number,
   ): Promise<Response<Report[]>> {
-    let take: number | undefined = 15;
+    let take: number | undefined = per_page || 15;
     let skip: number | undefined = page ? (page - 1) * take : 0;
 
     if (pagination === false) {

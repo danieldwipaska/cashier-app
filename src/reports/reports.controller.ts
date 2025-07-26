@@ -50,6 +50,7 @@ export class ReportsController {
     @Query('crew_id') crew_id: string,
     @Query('type') type: ReportType | ReportType[],
     @Query('page', new DefaultValuePipe(1), ParseIntPipe) page: number,
+    @Query('per_page', new DefaultValuePipe(0), ParseIntPipe) per_page: number,
     @Query('pagination', new DefaultValuePipe(true), ParseBoolPipe)
     pagination: boolean,
   ) {
@@ -67,6 +68,7 @@ export class ReportsController {
       },
       page,
       pagination,
+      per_page,
     );
   }
 

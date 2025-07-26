@@ -19,6 +19,7 @@ import { LoggingMiddleware } from './middlewares/logging.middleware';
 import { ModifiersModule } from './modifiers/modifiers.module';
 import { FnbModifiersModule } from './fnb-modifiers/fnb-modifiers.module';
 import { SentryModule } from '@sentry/nestjs/setup';
+import { ExportsModule } from './exports/exports.module';
 
 @Module({
   imports: [
@@ -39,6 +40,7 @@ import { SentryModule } from '@sentry/nestjs/setup';
     LoggerModule,
     ModifiersModule,
     FnbModifiersModule,
+    ExportsModule,
   ],
   controllers: [AppController],
   providers: [AppService],
