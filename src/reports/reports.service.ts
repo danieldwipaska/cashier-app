@@ -298,6 +298,14 @@ export class ReportsService {
     id: string,
     is_checker: boolean,
   ): Promise<Response<any>> {
+    const printer = {
+      first_server: process.env.FIRST_SERVER || 'first_printer',
+      second_server: process.env.SECOND_SERVER || 'second_printer',
+      greeter: process.env.GREETER || 'main_printer',
+      manager: process.env.MANAGER || 'main_printer',
+      admin: process.env.ADMIN || 'main_printer',
+    };
+
     try {
       const report = await this.prisma.report.findUnique({
         where: {
@@ -349,11 +357,13 @@ export class ReportsService {
       };
 
       try {
+        console.log(printer[request.user?.username]);
         const url = `${process.env.BAHARI_RECEIPT_PRINTING_BASE_URL}/print`;
         await firstValueFrom(
           this.httpService.post(url, {
             data: receiptData,
             isChecker: is_checker,
+            printer: printer[request.user?.username] || 'main_printer',
           }),
         );
 
@@ -369,6 +379,7 @@ export class ReportsService {
             id,
             shop_id: request.shop.id,
             is_checker,
+            printer,
           },
         );
 
@@ -386,6 +397,7 @@ export class ReportsService {
             id,
             shop_id: request.shop.id,
             is_checker,
+            printer,
           },
         );
         throw error;
@@ -400,6 +412,7 @@ export class ReportsService {
           id,
           shop_id: request.shop.id,
           is_checker,
+          printer,
         },
       );
       throw error;
