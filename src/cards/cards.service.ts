@@ -180,6 +180,10 @@ export class CardsService {
               note,
               shop_id: req.shop.id,
             },
+            include: {
+              crew: true,
+              method: true,
+            },
           }),
         ]);
 
@@ -407,6 +411,10 @@ export class CardsService {
               method_id: paymentMethodId,
               note,
               shop_id: req.shop.id,
+            },
+            include: {
+              crew: true,
+              method: true,
             },
           }),
         ]);
@@ -700,7 +708,19 @@ export class CardsService {
         }),
         this.prisma.report.create({
           data: newReportData,
-          include: { Item: true },
+          include: {
+            Item: {
+              include: {
+                fnb: {
+                  include: {
+                    category: true,
+                  },
+                },
+              },
+            },
+            crew: true,
+            method: true,
+          },
         }),
       ]);
 

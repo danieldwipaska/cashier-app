@@ -100,7 +100,19 @@ export class ReportsService {
     try {
       const report = await this.prisma.report.create({
         data: newReportData,
-        include: { Item: true },
+        include: {
+          Item: {
+            include: {
+              fnb: {
+                include: {
+                  category: true,
+                },
+              },
+            },
+          },
+          crew: true,
+          method: true,
+        },
       });
 
       this.logger.logBusinessEvent(
@@ -354,10 +366,10 @@ export class ReportsService {
         servicePercent: report.service_percent,
         subtotal: report.total_payment,
         total: report.total_payment_after_tax_service,
+        note: report.note,
       };
 
       try {
-        console.log(printer[request.user?.username]);
         const url = `${process.env.BAHARI_RECEIPT_PRINTING_BASE_URL}/print`;
         await firstValueFrom(
           this.httpService.post(url, {
@@ -554,7 +566,19 @@ export class ReportsService {
               shop_id: req.shop.id,
             },
             data: reportData,
-            include: { Item: true },
+            include: {
+              Item: {
+                include: {
+                  fnb: {
+                    include: {
+                      category: true,
+                    },
+                  },
+                },
+              },
+              crew: true,
+              method: true,
+            },
           });
 
           return updatedReport;
@@ -656,24 +680,95 @@ export class ReportsService {
       });
       if (!report) throw new NotFoundException('Report Not Found');
 
-      // Update refunded_amount for each item
-      for (const item of items) {
-        const oldItem = await this.prisma.item.findUnique({
-          where: { report_id: id, id: item.id },
-        });
-        if (!oldItem) {
-          throw new NotFoundException(`Item with id ${item.id} not found`);
-        }
+      const itemIds = items.map((item) => item.id);
+      const oldItems = await this.prisma.item.findMany({
+        where: {
+          report_id: id,
+          id: { in: itemIds },
+        },
+      });
 
-        const updatedItem = await this.prisma.item.update({
-          where: { report_id: id, id: item.id },
-          data: {
-            refunded_amount: {
-              increment: item.added_refunded_amount,
+      if (oldItems.length !== items.length) {
+        const foundIds = oldItems.map((item) => item.id);
+        const notFoundIds = itemIds.filter(
+          (itemId) => !foundIds.includes(itemId),
+        );
+        throw new NotFoundException(
+          `Item(s) with id(s) ${notFoundIds.join(', ')} not found`,
+        );
+      }
+
+      let totalPayment = 0;
+      let total_payment_after_tax_service = 0;
+      oldItems.forEach((oldItem) => {
+        totalPayment += orderDiscountedPrice({
+          price: oldItem.price,
+          amount: items.find((item) => item.id === oldItem.id)
+            .added_refunded_amount,
+          discountPercent: oldItem.discount_percent || 0,
+        });
+      });
+
+      const taxService = new ServiceTax(
+        totalPayment,
+        report.service_percent,
+        report.tax_percent,
+      );
+
+      if (!report.included_tax_service) {
+        total_payment_after_tax_service = taxService.calculateTax();
+      } else {
+        total_payment_after_tax_service = totalPayment;
+      }
+
+      let transactionPromises;
+      if (report.card_number) {
+        transactionPromises = [
+          ...items.map((item) =>
+            this.prisma.item.update({
+              where: { report_id: id, id: item.id },
+              data: {
+                refunded_amount: {
+                  increment: item.added_refunded_amount,
+                },
+              },
+            }),
+          ),
+          this.prisma.card.update({
+            where: {
+              card_number: report.card_number,
+              shop: request.shop?.id,
             },
-          },
-        });
+            data: {
+              balance: {
+                increment: total_payment_after_tax_service,
+              },
+            },
+          }),
+        ];
+      } else {
+        transactionPromises = items.map((item) =>
+          this.prisma.item.update({
+            where: { report_id: id, id: item.id },
+            data: {
+              refunded_amount: {
+                increment: item.added_refunded_amount,
+              },
+            },
+          }),
+        );
+      }
 
+      await this.prisma.$transaction(transactionPromises);
+
+      // Logging untuk setiap item yang diupdate
+      for (const item of items) {
+        const oldItem = oldItems.find((oi) => oi.id === item.id);
+        const updatedItem = {
+          ...oldItem,
+          refunded_amount:
+            (oldItem?.refunded_amount || 0) + item.added_refunded_amount,
+        };
         this.logger.logBusinessEvent(
           `Item updated: report number ${report.report_id}, item id ${item.id}`,
           'ITEM_UPDATED',
