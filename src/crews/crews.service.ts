@@ -112,8 +112,10 @@ export class CrewsService {
     try {
       const crew = await this.prisma.crew.findUnique({
         where: {
-          code,
-          shop_id: request.shop.id,
+          shop_id_code: {
+            shop_id: request.shop.id,
+            code,
+          },
         },
       });
       if (!crew) throw new NotFoundException('Crew Not Found');

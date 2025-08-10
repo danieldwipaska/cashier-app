@@ -13,16 +13,26 @@ import {
   UseGuards,
 } from '@nestjs/common';
 import { CardsService } from './cards.service';
-import { AuthGuard, CrewGuard, ShopGuard } from 'src/auth/auth.guard';
+import {
+  AuthGuard,
+  CrewGuard,
+  RoleGuard,
+  ShopGuard,
+} from 'src/auth/auth.guard';
 import { CreateReportWithCardDto } from 'src/reports/dto/create-report.dto';
 import { ValidationPipe } from 'src/validation.pipe';
 import { CreateCardDto } from './dto/create-card.dto';
+import { UserRole } from 'src/enums/user';
 
 @Controller('cards')
 export class CardsController {
   constructor(private readonly cardsService: CardsService) {}
 
-  @UseGuards(AuthGuard, ShopGuard)
+  @UseGuards(
+    AuthGuard,
+    new RoleGuard([UserRole.ADMIN, UserRole.GREETER, UserRole.MANAGER]),
+    ShopGuard,
+  )
   @Post()
   create(
     @Req() request: Request,
@@ -49,7 +59,12 @@ export class CardsController {
     return this.cardsService.findOneByCardNumber(request, cardNumber);
   }
 
-  @UseGuards(AuthGuard, ShopGuard, CrewGuard)
+  @UseGuards(
+    AuthGuard,
+    new RoleGuard([UserRole.ADMIN, UserRole.GREETER, UserRole.MANAGER]),
+    ShopGuard,
+    CrewGuard,
+  )
   @Patch(':id/topup/activate')
   topUpAndActivate(
     @Param('id') id: string,
@@ -71,7 +86,12 @@ export class CardsController {
     );
   }
 
-  @UseGuards(AuthGuard, ShopGuard, CrewGuard)
+  @UseGuards(
+    AuthGuard,
+    new RoleGuard([UserRole.ADMIN, UserRole.GREETER, UserRole.MANAGER]),
+    ShopGuard,
+    CrewGuard,
+  )
   @Patch(':id/topup')
   topUp(
     @Param('id') id: string,
@@ -83,7 +103,12 @@ export class CardsController {
     return this.cardsService.topUp(id, +addBalance, paymentMethod, note, req);
   }
 
-  @UseGuards(AuthGuard, ShopGuard, CrewGuard)
+  @UseGuards(
+    AuthGuard,
+    new RoleGuard([UserRole.ADMIN, UserRole.GREETER, UserRole.MANAGER]),
+    ShopGuard,
+    CrewGuard,
+  )
   @Patch(':id/checkout')
   checkout(
     @Param('id') id: string,
@@ -94,7 +119,12 @@ export class CardsController {
     return this.cardsService.checkout(id, paymentMethod, note, req);
   }
 
-  @UseGuards(AuthGuard, ShopGuard, CrewGuard)
+  @UseGuards(
+    AuthGuard,
+    new RoleGuard([UserRole.ADMIN, UserRole.GREETER, UserRole.MANAGER]),
+    ShopGuard,
+    CrewGuard,
+  )
   @Patch(':id/adjust')
   adjustBalance(
     @Param('id') id: string,
@@ -105,7 +135,7 @@ export class CardsController {
     return this.cardsService.adjustBalance(id, +adjustedBalance, note, req);
   }
 
-  @UseGuards(AuthGuard, ShopGuard)
+  @UseGuards(AuthGuard, new RoleGuard([UserRole.ADMIN]), ShopGuard)
   @Patch(':id/pay')
   pay(
     @Param('id') id: string,

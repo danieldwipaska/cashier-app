@@ -18,7 +18,7 @@ jobs:
       - name: Set up Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: '22'
+          node-version: '18'
           cache: 'npm'
 
       - name: Install dependencies
@@ -46,7 +46,7 @@ jobs:
             cd /var/www/bcf_server
             npm install --production
             DATABASE_URL=${{ secrets.DATABASE_URL }} npx prisma migrate deploy
-            sudo systemctl restart bahari_cash_flow.service
+            sudo systemctl restart bcf_server.service
 
   build-and-deploy-development:
     if: github.ref == 'refs/heads/development'
@@ -59,7 +59,7 @@ jobs:
       - name: Set up Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: '22'
+          node-version: '18'
           cache: 'npm'
 
       - name: Install dependencies
@@ -75,7 +75,7 @@ jobs:
           username: ${{ secrets.DEVELOPMENT_SSH_USERNAME }}
           key: ${{ secrets.DEVELOPMENT_SSH_PRIVATE_KEY }}
           source: "dist/"
-          target: "/var/www/bcf_server_dev/"
+          target: "/var/www/bcf_server/"
 
       - name: Install development dependencies and run migrations on server
         uses: appleboy/ssh-action@v1.0.3
@@ -84,7 +84,7 @@ jobs:
           username: ${{ secrets.DEVELOPMENT_SSH_USERNAME }}
           key: ${{ secrets.DEVELOPMENT_SSH_PRIVATE_KEY }}
           script: |
-            cd /var/www/bcf_server_dev
+            cd /var/www/bcf_server
             npm install --production
             DATABASE_URL=${{ secrets.DEVELOPMENT_DATABASE_URL }} npx prisma migrate deploy
-            sudo systemctl restart bahari_cash_flow_dev.service
+            sudo systemctl restart bcf_server.service

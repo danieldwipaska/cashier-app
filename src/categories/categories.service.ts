@@ -24,7 +24,12 @@ export class CategoriesService {
   ): Promise<Response<Category>> {
     try {
       const category = await this.prisma.category.findUnique({
-        where: { name: createCategoryDto.name },
+        where: {
+          shop_id_name: {
+            shop_id: request.shop.id,
+            name: createCategoryDto.name,
+          },
+        },
       });
       if (category) throw new BadRequestException('Category Already Exists');
 

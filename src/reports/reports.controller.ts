@@ -17,12 +17,13 @@ import {
 } from '@nestjs/common';
 import { ReportsService } from './reports.service';
 import { CreateReportDto } from './dto/create-report.dto';
-import { AuthGuard, ShopGuard } from 'src/auth/auth.guard';
+import { AuthGuard, RoleGuard, ShopGuard } from 'src/auth/auth.guard';
 import {
   UpdateRefundedItemDto,
   UpdateReportDto,
 } from './dto/update-report.dto';
 import { ReportStatus, ReportType } from 'src/enums/report';
+import { UserRole } from 'src/enums/user';
 
 @Controller('reports')
 export class ReportsController {
@@ -49,6 +50,7 @@ export class ReportsController {
     @Query('crew_id') crew_id: string,
     @Query('type') type: ReportType | ReportType[],
     @Query('page', new DefaultValuePipe(1), ParseIntPipe) page: number,
+    @Query('per_page', new DefaultValuePipe(0), ParseIntPipe) per_page: number,
     @Query('pagination', new DefaultValuePipe(true), ParseBoolPipe)
     pagination: boolean,
   ) {
@@ -66,6 +68,7 @@ export class ReportsController {
       },
       page,
       pagination,
+      per_page,
     );
   }
 
@@ -125,7 +128,7 @@ export class ReportsController {
     return this.reportsService.cancelOpenBill(request, id);
   }
 
-  @UseGuards(AuthGuard, ShopGuard)
+  @UseGuards(AuthGuard, new RoleGuard([UserRole.ADMIN]), ShopGuard)
   @Delete(':id')
   remove(@Req() request: Request, @Param('id') id: string) {
     return this.reportsService.remove(request, id);

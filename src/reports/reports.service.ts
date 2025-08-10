@@ -53,6 +53,12 @@ export class ReportsService {
           refunded_amount: item.refunded_amount || 0,
           discount_percent: item.discount_percent || 0,
           price: item.price,
+          note: item.note,
+          ModifierItem: {
+            create: item.modifierItems.map((modifierItem) => ({
+              modifier_id: modifierItem.modifier_id,
+            })),
+          },
         })),
       },
     };
@@ -94,7 +100,19 @@ export class ReportsService {
     try {
       const report = await this.prisma.report.create({
         data: newReportData,
-        include: { Item: true },
+        include: {
+          Item: {
+            include: {
+              fnb: {
+                include: {
+                  category: true,
+                },
+              },
+            },
+          },
+          crew: true,
+          method: true,
+        },
       });
 
       this.logger.logBusinessEvent(
@@ -138,8 +156,9 @@ export class ReportsService {
     },
     page?: number,
     pagination?: boolean,
+    per_page?: number,
   ): Promise<Response<Report[]>> {
-    let take: number | undefined = 15;
+    let take: number | undefined = per_page || 15;
     let skip: number | undefined = page ? (page - 1) * take : 0;
 
     if (pagination === false) {
@@ -255,9 +274,10 @@ export class ReportsService {
         include: {
           Item: {
             include: {
-              fnb: {
-                select: {
-                  name: true,
+              fnb: true,
+              ModifierItem: {
+                include: {
+                  modifier: true,
                 },
               },
             },
@@ -290,6 +310,14 @@ export class ReportsService {
     id: string,
     is_checker: boolean,
   ): Promise<Response<any>> {
+    const printer = {
+      first_server: process.env.FIRST_SERVER || 'first_printer',
+      second_server: process.env.SECOND_SERVER || 'second_printer',
+      greeter: process.env.GREETER || 'main_printer',
+      manager: process.env.MANAGER || 'main_printer',
+      admin: process.env.ADMIN || 'main_printer',
+    };
+
     try {
       const report = await this.prisma.report.findUnique({
         where: {
@@ -338,6 +366,7 @@ export class ReportsService {
         servicePercent: report.service_percent,
         subtotal: report.total_payment,
         total: report.total_payment_after_tax_service,
+        note: report.note,
       };
 
       try {
@@ -346,6 +375,7 @@ export class ReportsService {
           this.httpService.post(url, {
             data: receiptData,
             isChecker: is_checker,
+            printer: printer[request.user?.username] || 'main_printer',
           }),
         );
 
@@ -361,6 +391,7 @@ export class ReportsService {
             id,
             shop_id: request.shop.id,
             is_checker,
+            printer,
           },
         );
 
@@ -378,6 +409,7 @@ export class ReportsService {
             id,
             shop_id: request.shop.id,
             is_checker,
+            printer,
           },
         );
         throw error;
@@ -392,6 +424,7 @@ export class ReportsService {
           id,
           shop_id: request.shop.id,
           is_checker,
+          printer,
         },
       );
       throw error;
@@ -502,27 +535,54 @@ export class ReportsService {
 
       try {
         // Remove old items and add new ones
-        const [, , updatedReport] = await this.prisma.$transaction([
-          this.prisma.item.deleteMany({ where: { report_id: id } }),
-          this.prisma.item.createMany({
-            data: items.map((item) => ({
-              report_id: id,
-              fnb_id: item.fnb_id,
-              amount: item.amount,
-              refunded_amount: item.refunded_amount || 0,
-              discount_percent: item.discount_percent || 0,
-              price: item.price,
-            })),
-          }),
-          this.prisma.report.update({
+        const updatedReport = await this.prisma.$transaction(async (prisma) => {
+          // Delete old items first
+          await prisma.item.deleteMany({ where: { report_id: id } });
+
+          // Create each item one by one to allow nested create
+          for (const item of items) {
+            await prisma.item.create({
+              data: {
+                report_id: id,
+                fnb_id: item.fnb_id,
+                amount: item.amount,
+                refunded_amount: item.refunded_amount || 0,
+                discount_percent: item.discount_percent || 0,
+                price: item.price,
+                note: item.note,
+                ModifierItem: {
+                  create: item.modifierItems.map((modifierItem) => ({
+                    modifier_id: modifierItem.modifier_id,
+                  })),
+                },
+              },
+            });
+          }
+
+          // Update report
+          const updatedReport = await prisma.report.update({
             where: {
               id,
               shop_id: req.shop.id,
             },
             data: reportData,
-            include: { Item: true },
-          }),
-        ]);
+            include: {
+              Item: {
+                include: {
+                  fnb: {
+                    include: {
+                      category: true,
+                    },
+                  },
+                },
+              },
+              crew: true,
+              method: true,
+            },
+          });
+
+          return updatedReport;
+        });
 
         this.logger.logBusinessEvent(
           `Items deleted: ${oldItems.map((item) => item.id).join(', ')}`,
@@ -620,24 +680,95 @@ export class ReportsService {
       });
       if (!report) throw new NotFoundException('Report Not Found');
 
-      // Update refunded_amount for each item
-      for (const item of items) {
-        const oldItem = await this.prisma.item.findUnique({
-          where: { report_id: id, id: item.id },
-        });
-        if (!oldItem) {
-          throw new NotFoundException(`Item with id ${item.id} not found`);
-        }
+      const itemIds = items.map((item) => item.id);
+      const oldItems = await this.prisma.item.findMany({
+        where: {
+          report_id: id,
+          id: { in: itemIds },
+        },
+      });
 
-        const updatedItem = await this.prisma.item.update({
-          where: { report_id: id, id: item.id },
-          data: {
-            refunded_amount: {
-              increment: item.added_refunded_amount,
+      if (oldItems.length !== items.length) {
+        const foundIds = oldItems.map((item) => item.id);
+        const notFoundIds = itemIds.filter(
+          (itemId) => !foundIds.includes(itemId),
+        );
+        throw new NotFoundException(
+          `Item(s) with id(s) ${notFoundIds.join(', ')} not found`,
+        );
+      }
+
+      let totalPayment = 0;
+      let total_payment_after_tax_service = 0;
+      oldItems.forEach((oldItem) => {
+        totalPayment += orderDiscountedPrice({
+          price: oldItem.price,
+          amount: items.find((item) => item.id === oldItem.id)
+            .added_refunded_amount,
+          discountPercent: oldItem.discount_percent || 0,
+        });
+      });
+
+      const taxService = new ServiceTax(
+        totalPayment,
+        report.service_percent,
+        report.tax_percent,
+      );
+
+      if (!report.included_tax_service) {
+        total_payment_after_tax_service = taxService.calculateTax();
+      } else {
+        total_payment_after_tax_service = totalPayment;
+      }
+
+      let transactionPromises;
+      if (report.card_number) {
+        transactionPromises = [
+          ...items.map((item) =>
+            this.prisma.item.update({
+              where: { report_id: id, id: item.id },
+              data: {
+                refunded_amount: {
+                  increment: item.added_refunded_amount,
+                },
+              },
+            }),
+          ),
+          this.prisma.card.update({
+            where: {
+              card_number: report.card_number,
+              shop: request.shop?.id,
             },
-          },
-        });
+            data: {
+              balance: {
+                increment: total_payment_after_tax_service,
+              },
+            },
+          }),
+        ];
+      } else {
+        transactionPromises = items.map((item) =>
+          this.prisma.item.update({
+            where: { report_id: id, id: item.id },
+            data: {
+              refunded_amount: {
+                increment: item.added_refunded_amount,
+              },
+            },
+          }),
+        );
+      }
 
+      await this.prisma.$transaction(transactionPromises);
+
+      // Logging untuk setiap item yang diupdate
+      for (const item of items) {
+        const oldItem = oldItems.find((oi) => oi.id === item.id);
+        const updatedItem = {
+          ...oldItem,
+          refunded_amount:
+            (oldItem?.refunded_amount || 0) + item.added_refunded_amount,
+        };
         this.logger.logBusinessEvent(
           `Item updated: report number ${report.report_id}, item id ${item.id}`,
           'ITEM_UPDATED',

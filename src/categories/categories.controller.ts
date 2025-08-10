@@ -11,9 +11,10 @@ import {
   ValidationPipe,
 } from '@nestjs/common';
 import { CategoriesService } from './categories.service';
-import { AuthGuard, ShopGuard } from 'src/auth/auth.guard';
+import { AuthGuard, RoleGuard, ShopGuard } from 'src/auth/auth.guard';
 import { CreateCategoryDto } from './dto/create-category.dto';
 import { UpdateCategoryDto } from './dto/update-category.dto';
+import { UserRole } from 'src/enums/user';
 
 @Controller('categories')
 export class CategoriesController {
@@ -40,7 +41,11 @@ export class CategoriesController {
     return this.categoriesService.findOne(request, name);
   }
 
-  @UseGuards(AuthGuard, ShopGuard)
+  @UseGuards(
+    AuthGuard,
+    new RoleGuard([UserRole.ADMIN, UserRole.MANAGER, UserRole.GREETER]),
+    ShopGuard,
+  )
   @Patch(':id')
   update(
     @Req() request: Request,
@@ -50,7 +55,11 @@ export class CategoriesController {
     return this.categoriesService.update(request, id, updateCategoryDto);
   }
 
-  @UseGuards(AuthGuard, ShopGuard)
+  @UseGuards(
+    AuthGuard,
+    new RoleGuard([UserRole.ADMIN, UserRole.GREETER, UserRole.MANAGER]),
+    ShopGuard,
+  )
   @Delete(':id')
   remove(@Req() request: Request, @Param('id') id: string) {
     return this.categoriesService.remove(request, id);

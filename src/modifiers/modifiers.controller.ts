@@ -6,23 +6,19 @@ import {
   Patch,
   Param,
   Delete,
-  Query,
-  DefaultValuePipe,
-  ParseIntPipe,
-  ParseBoolPipe,
   UseGuards,
-  Req,
   ValidationPipe,
+  Req,
 } from '@nestjs/common';
-import { FnbsService } from './fnbs.service';
+import { ModifiersService } from './modifiers.service';
+import { CreateModifierDto } from './dto/create-modifier.dto';
+import { UpdateModifierDto } from './dto/update-modifier.dto';
 import { AuthGuard, RoleGuard, ShopGuard } from 'src/auth/auth.guard';
-import { CreateFnbDto } from './dto/create-fnb.dto';
-import { UpdateFnbDto } from './dto/update-fnb.dto';
 import { UserRole } from 'src/enums/user';
 
-@Controller('fnbs')
-export class FnbsController {
-  constructor(private readonly fnbsService: FnbsService) {}
+@Controller('modifiers')
+export class ModifiersController {
+  constructor(private readonly modifiersService: ModifiersService) {}
 
   @UseGuards(
     AuthGuard,
@@ -32,26 +28,21 @@ export class FnbsController {
   @Post()
   create(
     @Req() request: Request,
-    @Body(new ValidationPipe()) data: CreateFnbDto,
+    @Body(new ValidationPipe()) createModifierDto: CreateModifierDto,
   ) {
-    return this.fnbsService.create(request, data);
+    return this.modifiersService.create(request, createModifierDto);
   }
 
   @UseGuards(AuthGuard, ShopGuard)
   @Get()
-  findAll(
-    @Req() request: Request,
-    @Query('page', new DefaultValuePipe(1), ParseIntPipe) page: number,
-    @Query('pagination', new DefaultValuePipe(true), ParseBoolPipe)
-    pagination?: boolean,
-  ) {
-    return this.fnbsService.findAll(request, page, pagination);
+  findAll(@Req() request: Request) {
+    return this.modifiersService.findAll(request);
   }
 
   @UseGuards(AuthGuard, ShopGuard)
   @Get(':id')
   findOne(@Req() request: Request, @Param('id') id: string) {
-    return this.fnbsService.findOne(request, id);
+    return this.modifiersService.findOne(request, id);
   }
 
   @UseGuards(
@@ -63,14 +54,14 @@ export class FnbsController {
   update(
     @Req() request: Request,
     @Param('id') id: string,
-    @Body() updateFnbDto: UpdateFnbDto,
+    @Body() updateModifierDto: UpdateModifierDto,
   ) {
-    return this.fnbsService.update(request, id, updateFnbDto);
+    return this.modifiersService.update(request, id, updateModifierDto);
   }
 
   @UseGuards(AuthGuard, new RoleGuard([UserRole.ADMIN]), ShopGuard)
   @Delete(':id')
   remove(@Req() request: Request, @Param('id') id: string) {
-    return this.fnbsService.remove(request, id);
+    return this.modifiersService.remove(request, id);
   }
 }

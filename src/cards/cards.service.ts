@@ -180,6 +180,10 @@ export class CardsService {
               note,
               shop_id: req.shop.id,
             },
+            include: {
+              crew: true,
+              method: true,
+            },
           }),
         ]);
 
@@ -408,6 +412,10 @@ export class CardsService {
               note,
               shop_id: req.shop.id,
             },
+            include: {
+              crew: true,
+              method: true,
+            },
           }),
         ]);
 
@@ -615,6 +623,12 @@ export class CardsService {
           refunded_amount: item.refunded_amount || 0,
           discount_percent: item.discount_percent || 0,
           price: item.price,
+          note: item.note,
+          ModifierItem: {
+            create: item.modifierItems.map((modifierItem) => ({
+              modifier_id: modifierItem.modifier_id,
+            })),
+          },
         })),
       },
     };
@@ -694,7 +708,19 @@ export class CardsService {
         }),
         this.prisma.report.create({
           data: newReportData,
-          include: { Item: true },
+          include: {
+            Item: {
+              include: {
+                fnb: {
+                  include: {
+                    category: true,
+                  },
+                },
+              },
+            },
+            crew: true,
+            method: true,
+          },
         }),
       ]);
 
