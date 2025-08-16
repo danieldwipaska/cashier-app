@@ -71,3 +71,64 @@ Nest is an MIT-licensed open source project. It can grow thanks to the sponsors 
 ## License
 
 Nest is [MIT licensed](LICENSE).
+
+
+# Production
+A Server required to serve the web app for production.
+Prepare the database before running the web app by doing the following steps:
+## 1. Create a user 
+
+PATH : `/auth/signup`
+POST: 
+```json
+{
+    "username": "<username>",
+    "password": "<password>"
+}
+```
+these are users you need to create:
+- admin
+- manager
+- first_server
+- second_server
+
+## 2. Create a shop
+
+PATH: `/shops`
+POST:
+```json
+{
+    "code": "<code>",
+    "name": "<name>"
+}
+```
+
+
+## 3. Create UsersOnShops
+
+PATH: `/user-on-shops`
+POST:
+```json
+{
+    "user_id": "<user_id>",
+    "shop_id": "<shop_id>"
+}
+```
+
+## 4. Login to get token
+
+## 5. Create a Backoffice Setting
+
+PATH: `/backoffice-settings`
+POST:
+```json
+{
+    "shop_id": "<shop_id>"
+}
+```
+
+## 6. Create initial data
+- Category
+- Product (CUSTOM VALUE)
+- Payment Method
+- Crew
