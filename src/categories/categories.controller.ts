@@ -55,11 +55,7 @@ export class CategoriesController {
     return this.categoriesService.update(request, id, updateCategoryDto);
   }
 
-  @UseGuards(
-    AuthGuard,
-    new RoleGuard([UserRole.ADMIN, UserRole.GREETER, UserRole.MANAGER]),
-    ShopGuard,
-  )
+  @UseGuards(AuthGuard, new RoleGuard([UserRole.ADMIN]), ShopGuard)
   @Delete(':id')
   remove(@Req() request: Request, @Param('id') id: string) {
     return this.categoriesService.remove(request, id);

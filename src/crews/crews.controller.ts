@@ -66,11 +66,7 @@ export class CrewsController {
     return this.crewsService.update(request, id, updateCrewDto);
   }
 
-  @UseGuards(
-    AuthGuard,
-    new RoleGuard([UserRole.ADMIN, UserRole.MANAGER]),
-    ShopGuard,
-  )
+  @UseGuards(AuthGuard, new RoleGuard([UserRole.ADMIN]), ShopGuard)
   @Delete(':id')
   remove(@Req() request: Request, @Param('id') id: string) {
     return this.crewsService.remove(request, id);

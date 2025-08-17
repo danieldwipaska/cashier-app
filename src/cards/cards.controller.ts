@@ -135,7 +135,11 @@ export class CardsController {
     return this.cardsService.adjustBalance(id, +adjustedBalance, note, req);
   }
 
-  @UseGuards(AuthGuard, new RoleGuard([UserRole.ADMIN]), ShopGuard)
+  @UseGuards(
+    AuthGuard,
+    new RoleGuard([UserRole.ADMIN, UserRole.MANAGER, UserRole.SERVER]),
+    ShopGuard,
+  )
   @Patch(':id/pay')
   pay(
     @Param('id') id: string,
