@@ -674,7 +674,7 @@ export class ReportsService {
       const report = await this.prisma.report.findUnique({
         where: {
           id,
-          shop_id: request.shop.id,
+          shop_id: request.shop?.id,
         },
         include: { Item: true },
       });
@@ -737,7 +737,8 @@ export class ReportsService {
           this.prisma.card.update({
             where: {
               card_number: report.card_number,
-              shop: request.shop?.id,
+              customer_id: report.customer_id,
+              shop_id: request.shop?.id,
             },
             data: {
               balance: {
