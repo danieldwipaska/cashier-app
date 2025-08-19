@@ -14,6 +14,8 @@ import {
 import { HttpService } from '@nestjs/axios';
 import { firstValueFrom } from 'rxjs';
 import { CustomLoggerService } from '../loggers/custom-logger.service';
+import { generateReceipt } from 'src/utils/printer.util';
+import { ReceiptData } from 'src/interfaces/printer.interface';
 
 @Injectable()
 export class ReportsService {
@@ -340,7 +342,7 @@ export class ReportsService {
       });
       if (!report) throw new NotFoundException('Receipt not found');
 
-      const receiptData = {
+      const receiptData: ReceiptData = {
         receiptType: report.type,
         storeName: 'Bahari Irish Pub',
         address: 'Jl. Kawi No.8A, Kota Malang, 65119',
@@ -367,14 +369,15 @@ export class ReportsService {
         subtotal: report.total_payment,
         total: report.total_payment_after_tax_service,
         note: report.note,
+        finalBalance: report.final_balance || 0,
+        cardNumber: report.card_number || '',
       };
 
       try {
         const url = `${process.env.BAHARI_RECEIPT_PRINTING_BASE_URL}/print`;
         await firstValueFrom(
           this.httpService.post(url, {
-            data: receiptData,
-            isChecker: is_checker,
+            data: generateReceipt(receiptData, is_checker),
             printer: printer[request.user?.username] || 'main_printer',
           }),
         );
